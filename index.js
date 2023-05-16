@@ -202,12 +202,14 @@ app.post("/getCourseContent", async (req, res) => {
   }
 });
 
-app.post("/createUser", async (req, res) => {
+app.post("/createUser", authMiddleware, async (req, res) => {
   try {
     const { email, phone, student_name, student_grade } = req.body;
     const firstname = student_name.split(" ")[0];
-    const lastname = student_name.split(" ")[1];
-    const { startTime, endTime } = getTrailTime();
+    let lastname = student_name.split(" ")[1];
+    if (lastname.length == 0) {
+      lastname = ".";
+    }
     const newUser = await createUser({
       email,
       firstname,
@@ -223,6 +225,9 @@ app.post("/createUser", async (req, res) => {
     } else {
       grade = "G6";
     }
+    const { startTime, endTime } = getTrailTime();
+    // console.log(newUser);
+    const uid = newUser[0].id;
     for (i = 0; i < 4; i++) {
       const cid = courseFormat[i][grade];
       await enrolUserToCourse({
