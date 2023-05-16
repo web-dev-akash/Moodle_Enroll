@@ -54,7 +54,7 @@ const authMiddleware = (req, res, next) => {
   }
   const token = authHeader.split(" ")[1];
   try {
-    if (token === AUTH_TOKEN) {
+    if (token == AUTH_TOKEN) {
       next();
     } else {
       return res.status(401).json({ message: "Invalid token" });
