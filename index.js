@@ -104,7 +104,7 @@ const getWeeklySchedule = async () => {
   return eventsOfTheWeek;
 };
 
-app.get("/weeklySchedule", async (req, res) => {
+app.get("/weeklySchedule", authMiddleware, async (req, res) => {
   try {
     const data = await getWeeklySchedule();
     return res.status(200).send({
