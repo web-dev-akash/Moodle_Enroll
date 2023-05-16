@@ -21,21 +21,25 @@ const PORT = process.env.PORT || 8080;
 
 const courseFormat = [
   {
+    // Math
     G4: "420",
     G5: "421",
     G6: "422",
   },
   {
+    // English
     G4: "424",
     G5: "425",
     G6: "426",
   },
   {
+    // Science
     G4: "427",
     G5: "428",
     G6: "429",
   },
   {
+    // GK
     G4: "430",
     G5: "431",
     G6: "432",
@@ -79,7 +83,20 @@ const getTrailTime = () => {
   };
 };
 
-const getPaidTime = () => {};
+const getPaidTime = () => {
+  let start = new Date();
+  start.setUTCHours(0, 0, 0, 0);
+
+  let end = new Date();
+  end.setUTCHours(23, 59, 59, 999);
+
+  let startTime = Math.floor(start.valueOf() / 1000);
+  let endTime = Math.floor(end.valueOf() / 1000) + 31536000;
+  return {
+    startTime,
+    endTime,
+  };
+};
 
 const getWeeklySchedule = async () => {
   let eventsOfTheWeek = [];
@@ -104,21 +121,21 @@ const getWeeklySchedule = async () => {
   return eventsOfTheWeek;
 };
 
-app.get("/weeklySchedule", authMiddleware, async (req, res) => {
-  try {
-    const data = await getWeeklySchedule();
-    return res.status(200).send({
-      status: "success",
-      data,
-    });
-  } catch (error) {
-    console.log(error);
-    return res.status(500).send({
-      status: "error",
-      error,
-    });
-  }
-});
+// app.get("/weeklySchedule", authMiddleware, async (req, res) => {
+//   try {
+//     const data = await getWeeklySchedule();
+//     return res.status(200).send({
+//       status: "success",
+//       data,
+//     });
+//   } catch (error) {
+//     console.log(error);
+//     return res.status(500).send({
+//       status: "error",
+//       error,
+//     });
+//   }
+// });
 
 const createUser = async ({
   email,
@@ -153,42 +170,198 @@ app.get("/", (req, res) => {
   });
 });
 
-app.post("/getCourseContent", async (req, res) => {
+app.post("/getWeeklySchedule", async (req, res) => {
   try {
-    const { courseId } = req.body;
-    if (!courseId) {
-      return res.status(400).send({
+    const { list_of_subjects, student_grade } = req.body;
+    const finalWeeklyData = [];
+    const weeklyData = await getWeeklySchedule();
+    let grade = "";
+    if (student_grade.includes("4")) {
+      grade = "G4";
+    } else if (student_grade.includes("5")) {
+      grade = "G5";
+    } else if (student_grade.includes("6")) {
+      grade = "G6";
+    } else {
+      return res.status(404).send({
         status: "error",
-        message: "Incomplete Data",
+        message: "Course not found",
       });
     }
-    const weeklyData = await getWeeklySchedule();
-    const courseData = await getCourseContent(courseId);
-    const finalWeeklyData = [];
-    courseData.map((res) => {
-      const data = res.modules;
-      if (data.length > 0) {
-        for (let i = 0; i < data.length; i++) {
-          for (let j = 0; j < weeklyData.length; j++) {
-            if (weeklyData[j].events[0].instance == data[i].instance) {
-              finalWeeklyData.push({
-                name: res.name,
-                date: new Date(
-                  weeklyData[j].events[0].timestart * 1000
-                ).toLocaleDateString(),
-              });
+    if (list_of_subjects == "Math") {
+      try {
+        const cid = courseFormat[0][grade];
+        const courseData = await getCourseContent(cid);
+        courseData.map((res) => {
+          const data = res.modules;
+          if (data.length > 0) {
+            for (let i = 0; i < data.length; i++) {
+              for (let j = 0; j < weeklyData.length; j++) {
+                let events = weeklyData[j].events;
+                for (let k = 0; k < events.length; k++) {
+                  if (weeklyData[j].events[k].instance == data[i].instance) {
+                    let time = weeklyData[j].events[k].timestart - 2400;
+                    finalWeeklyData.push({
+                      name: res.name,
+                      date: new Date(
+                        weeklyData[j].events[k].timestart * 1000
+                      ).toLocaleDateString(),
+                      time: new Date(time * 1000).toLocaleTimeString(),
+                    });
+                  }
+                }
+              }
             }
           }
-        }
+        });
+      } catch (error) {
+        return res.status(500).send({
+          error,
+        });
       }
-    });
-
-    // if (data.errorcode) {
-    //   return res.status(404).send({
-    //     status: "error",
-    //     message: "Course not found",
-    //   });
-    // }
+    } else if (list_of_subjects == "English") {
+      try {
+        const cid = courseFormat[1][grade];
+        const courseData = await getCourseContent(cid);
+        courseData.map((res) => {
+          const data = res.modules;
+          if (data.length > 0) {
+            for (let i = 0; i < data.length; i++) {
+              for (let j = 0; j < weeklyData.length; j++) {
+                let events = weeklyData[j].events;
+                for (let k = 0; k < events.length; k++) {
+                  if (weeklyData[j].events[k].instance == data[i].instance) {
+                    let time = weeklyData[j].events[k].timestart - 2400;
+                    finalWeeklyData.push({
+                      name: res.name,
+                      date: new Date(
+                        weeklyData[j].events[k].timestart * 1000
+                      ).toLocaleDateString(),
+                      time: new Date(time * 1000).toLocaleTimeString(),
+                    });
+                  }
+                }
+              }
+            }
+          }
+        });
+      } catch (error) {
+        return res.status(500).send({
+          error,
+        });
+      }
+    } else if (list_of_subjects == "Science") {
+      try {
+        const cid = courseFormat[2][grade];
+        const courseData = await getCourseContent(cid);
+        courseData.map((res) => {
+          const data = res.modules;
+          if (data.length > 0) {
+            for (let i = 0; i < data.length; i++) {
+              for (let j = 0; j < weeklyData.length; j++) {
+                let events = weeklyData[j].events;
+                for (let k = 0; k < events.length; k++) {
+                  if (weeklyData[j].events[k].instance == data[i].instance) {
+                    let time = weeklyData[j].events[k].timestart - 2400;
+                    finalWeeklyData.push({
+                      name: res.name,
+                      date: new Date(
+                        weeklyData[j].events[k].timestart * 1000
+                      ).toLocaleDateString(),
+                      time: new Date(time * 1000).toLocaleTimeString(),
+                    });
+                  }
+                }
+              }
+            }
+          }
+        });
+      } catch (error) {
+        return res.status(500).send({
+          error,
+        });
+      }
+    } else if (list_of_subjects == "GK") {
+      try {
+        const cid = courseFormat[3][grade];
+        const courseData = await getCourseContent(cid);
+        courseData.map((res) => {
+          const data = res.modules;
+          if (data.length > 0) {
+            for (let i = 0; i < data.length; i++) {
+              for (let j = 0; j < weeklyData.length; j++) {
+                let events = weeklyData[j].events;
+                for (let k = 0; k < events.length; k++) {
+                  if (weeklyData[j].events[k].instance == data[i].instance) {
+                    let time = weeklyData[j].events[k].timestart - 2400;
+                    finalWeeklyData.push({
+                      name: res.name,
+                      date: new Date(
+                        weeklyData[j].events[k].timestart * 1000
+                      ).toLocaleDateString(),
+                      time: new Date(time * 1000).toLocaleTimeString(),
+                    });
+                  }
+                }
+              }
+            }
+          }
+        });
+      } catch (error) {
+        return res.status(500).send({
+          error,
+        });
+      }
+    } else if (
+      list_of_subjects.includes("GK") &&
+      list_of_subjects.includes("Science") &&
+      list_of_subjects.includes("English") &&
+      list_of_subjects.includes("Math")
+    ) {
+      try {
+        for (x = 0; x < 4; x++) {
+          const cid = courseFormat[x][grade];
+          let subject = "";
+          if (x == 0) {
+            subject = "Math";
+          } else if (x == 1) {
+            subject = "English";
+          } else if (x == 2) {
+            subject = "Science";
+          } else if (x == 3) {
+            subject = "GK";
+          }
+          const courseData = await getCourseContent(cid);
+          courseData.map((res) => {
+            const data = res.modules;
+            if (data.length > 0) {
+              for (let i = 0; i < data.length; i++) {
+                for (let j = 0; j < weeklyData.length; j++) {
+                  let events = weeklyData[j].events;
+                  for (let k = 0; k < events.length; k++) {
+                    if (weeklyData[j].events[k].instance == data[i].instance) {
+                      let time = weeklyData[j].events[k].timestart - 2400;
+                      finalWeeklyData.push({
+                        subject,
+                        name: res.name,
+                        date: new Date(
+                          weeklyData[j].events[k].timestart * 1000
+                        ).toLocaleDateString(),
+                        time: new Date(time * 1000).toLocaleTimeString(),
+                      });
+                    }
+                  }
+                }
+              }
+            }
+          });
+        }
+      } catch (error) {
+        return res.status(500).send({
+          error,
+        });
+      }
+    }
     return res.status(200).send({
       status: "success",
       finalWeeklyData,
@@ -202,7 +375,7 @@ app.post("/getCourseContent", async (req, res) => {
   }
 });
 
-app.post("/createUser", authMiddleware, async (req, res) => {
+app.post("/createTrailUser", authMiddleware, async (req, res) => {
   try {
     const { email, phone, student_name, student_grade } = req.body;
     const firstname = student_name.split(" ")[0];
@@ -245,6 +418,120 @@ app.post("/createUser", authMiddleware, async (req, res) => {
     res.status(500).send({
       status: error,
     });
+  }
+});
+
+app.post("/enrolPaidUser", authMiddleware, async (req, res) => {
+  const { list_of_subjects, student_grade, userId } = req.body;
+  const { startTime, endTime } = getPaidTime();
+  let grade = "";
+  if (student_grade.includes("4")) {
+    grade = "G4";
+  } else if (student_grade.includes("5")) {
+    grade = "G5";
+  } else if (student_grade.includes("6")) {
+    grade = "G6";
+  } else {
+    return res.status(404).send({
+      status: "error",
+      message: "Course not found",
+    });
+  }
+  if (list_of_subjects == "Math") {
+    try {
+      const cid = courseFormat[0][grade];
+      const data = await enrolUserToCourse({
+        courseId: cid,
+        timeStart: startTime,
+        timeEnd: endTime,
+        userId,
+      });
+      return res.status(200).send({
+        status: "success",
+        data,
+      });
+    } catch (error) {
+      return res.status(500).send({
+        error,
+      });
+    }
+  } else if (list_of_subjects == "English") {
+    try {
+      const cid = courseFormat[1][grade];
+      const data = await enrolUserToCourse({
+        courseId: cid,
+        timeStart: startTime,
+        timeEnd: endTime,
+        userId,
+      });
+      return res.status(200).send({
+        status: "success",
+        data,
+      });
+    } catch (error) {
+      return res.status(500).send({
+        error,
+      });
+    }
+  } else if (list_of_subjects == "Science") {
+    try {
+      const cid = courseFormat[2][grade];
+      const data = await enrolUserToCourse({
+        courseId: cid,
+        timeStart: startTime,
+        timeEnd: endTime,
+        userId,
+      });
+      return res.status(200).send({
+        status: "success",
+        data,
+      });
+    } catch (error) {
+      return res.status(500).send({
+        error,
+      });
+    }
+  } else if (list_of_subjects == "GK") {
+    try {
+      const cid = courseFormat[3][grade];
+      await enrolUserToCourse({
+        courseId: cid,
+        timeStart: startTime,
+        timeEnd: endTime,
+        userId,
+      });
+      return res.status(200).send({
+        status: "success",
+      });
+    } catch (error) {
+      return res.status(500).send({
+        error,
+      });
+    }
+  } else if (
+    list_of_subjects.includes("GK") &&
+    list_of_subjects.includes("Science") &&
+    list_of_subjects.includes("English") &&
+    list_of_subjects.includes("Math")
+  ) {
+    try {
+      for (i = 0; i < 4; i++) {
+        const cid = courseFormat[i][grade];
+        await enrolUserToCourse({
+          courseId: cid,
+          timeStart: startTime,
+          timeEnd: endTime,
+          userId,
+        });
+      }
+      return res.status(200).send({
+        status: "success",
+      });
+    } catch (error) {
+      return res.status(500).send({
+        error,
+      });
+    }
   }
 });
 
