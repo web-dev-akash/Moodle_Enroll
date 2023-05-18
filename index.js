@@ -490,7 +490,7 @@ app.post("/getUserId", authMiddleware, async (req, res) => {
     const { email } = req.body;
     const user = await getExistingUser(email);
     return res.status(200).send({
-      user,
+      userId: user[0].id,
     });
   } catch (error) {
     console.log(error);
