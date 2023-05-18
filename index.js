@@ -9,14 +9,9 @@ const watiAPI = `https://live-server-105694.wati.io`;
 const token = process.env.WATI_TOKEN;
 const AUTH_TOKEN = process.env.AUTH_TOKEN;
 const PORT = process.env.PORT || 8080;
-// console.log(JWT_SECRET);
-// const timeConvertor = (timestamp) => {
-//   dateObj = new Date(timestamp * 1000);
-//   utcString = dateObj.toLocaleTimeString("en-US");
-//   // time = utcString.slice(-11, -4);
-//   return utcString;
-// };
-
+const cron = require("node-cron");
+const EventEmitter = require("events");
+const eventEmitter = new EventEmitter();
 // enroll user to a batch ------------- https://wisechamps.app/webservice/rest/server.php?wstoken=2ae4c24bfc47f91187132239851605e3&wsfunction=
 
 const courseFormat = [
@@ -49,7 +44,6 @@ const wstoken = process.env.WSTOKEN;
 const wsfunctionCreate = "core_user_create_users";
 const wsfunctionEnrol = "enrol_manual_enrol_users";
 const wsfunctionGetContent = "core_course_get_contents";
-const password = "wise@123";
 
 const authMiddleware = (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -121,6 +115,13 @@ const getWeeklySchedule = async () => {
   return eventsOfTheWeek;
 };
 
+const getExistingUser = async (username) => {
+  const res = await axios.get(
+    `${url}?wstoken=${wstoken}&&wsfunction=core_user_get_users_by_field&field=username&values[0]=${username}&moodlewsrestformat=json`
+  );
+  return res.data;
+};
+
 // app.get("/weeklySchedule", authMiddleware, async (req, res) => {
 //   try {
 //     const data = await getWeeklySchedule();
@@ -145,7 +146,7 @@ const createUser = async ({
   subscription,
 }) => {
   const res = await axios.post(
-    `${url}?wstoken=${wstoken}&wsfunction=${wsfunctionCreate}&users[0][username]=${email}&users[0][password]=${password}&users[0][firstname]=${firstname}&users[0][lastname]=${lastname}&users[0][email]=${email}&users[0][phone1]=${phone}&users[0][customfields][0][type]=live_quiz_subscription&users[0][customfields][0][value]=${subscription}&moodlewsrestformat=json`
+    `${url}?wstoken=${wstoken}&wsfunction=${wsfunctionCreate}&users[0][username]=${email}&users[0][password]=${phone}&users[0][firstname]=${firstname}&users[0][lastname]=${lastname}&users[0][email]=${email}&users[0][phone1]=${phone}&users[0][customfields][0][type]=live_quiz_subscription&users[0][customfields][0][value]=${subscription}&moodlewsrestformat=json`
   );
   return res.data;
 };
@@ -375,21 +376,27 @@ app.post("/getWeeklySchedule", async (req, res) => {
   }
 });
 
+const updateSubscription = async (userId, value) => {
+  const urlS = `${url}?wstoken=${wstoken}&wsfunction=core_user_update_users&&users[0][id]=${userId}&users[0][customfields][0][type]=live_quiz_subscription&users[0][customfields][0][value]=${value}&moodlewsrestformat=json`;
+  // console.log(urlS);
+  const res = await axios.get(urlS);
+  return res.data;
+};
+
 app.post("/createTrailUser", authMiddleware, async (req, res) => {
   try {
-    const { email, phone, student_name, student_grade } = req.body;
+    let { email, phone, student_name, student_grade } = req.body;
+    phone = phone.substring(2, 12);
     const firstname = student_name.split(" ")[0];
-    let lastname = student_name.split(" ")[1];
-    if (lastname.length == 0) {
+    let lastname = "";
+    if (student_name.split(" ").length == 1) {
       lastname = ".";
+    } else {
+      lastname = student_name.split(" ")[1];
+      if ((lastname[0] = " ")) {
+        lastname = ".";
+      }
     }
-    const newUser = await createUser({
-      email,
-      firstname,
-      lastname,
-      phone,
-      subscription: "Trail",
-    });
     let grade = "";
     if (student_grade.includes("4")) {
       grade = "G4";
@@ -398,21 +405,78 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
     } else {
       grade = "G6";
     }
-    const { startTime, endTime } = getTrailTime();
-    // console.log(newUser);
-    const uid = newUser[0].id;
-    for (i = 0; i < 4; i++) {
-      const cid = courseFormat[i][grade];
-      await enrolUserToCourse({
-        courseId: cid,
-        timeStart: startTime,
-        timeEnd: endTime,
-        userId: uid,
-      });
+    const user = await getExistingUser(email);
+    let { startTime, endTime } = getTrailTime();
+    if (user.length == 0) {
+      try {
+        const newUser = await createUser({
+          email,
+          firstname,
+          lastname,
+          phone,
+          subscription: "Trail",
+        });
+        const uid = newUser[0].id;
+        for (i = 0; i < 4; i++) {
+          const cid = courseFormat[i][grade];
+          await enrolUserToCourse({
+            courseId: cid,
+            timeStart: startTime,
+            timeEnd: endTime,
+            userId: uid,
+          });
+        }
+        return res.status(200).send({
+          newUser,
+          status: "trialactivated",
+        });
+      } catch (error) {
+        return res.status(500).send({
+          error,
+        });
+      }
+    } else {
+      const length = user[0].customfields;
+      const subscription = length[length.length - 1].value;
+      if (subscription == "NA") {
+        try {
+          const userId = user[0].id;
+          await updateSubscription(userId, "Trail");
+          for (i = 0; i < 4; i++) {
+            const cid = courseFormat[i][grade];
+            await enrolUserToCourse({
+              courseId: cid,
+              timeStart: startTime,
+              timeEnd: endTime,
+              userId,
+            });
+          }
+          return res.status(200).send({
+            status: "trialactivated",
+          });
+        } catch (error) {
+          return res.status(404).send({
+            message: "User not found",
+          });
+        }
+      } else if (subscription == "Trail") {
+        return res.status(200).send({
+          status: "trialinprogress",
+        });
+      } else if (subscription == "Tier 1" || subscription == "Tier 2") {
+        return res.status(200).send({
+          status: "alreadyapaiduser",
+        });
+      } else if (subscription == "Trail Expired") {
+        return res.status(200).send({
+          status: "trialexpired",
+        });
+      } else if (subscription == "Subscription Expired") {
+        return res.status(200).send({
+          status: "subscriptionexpired",
+        });
+      }
     }
-    res.status(200).send({
-      newUser,
-    });
   } catch (error) {
     console.log(error);
     res.status(500).send({
@@ -422,7 +486,9 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
 });
 
 app.post("/enrolPaidUser", authMiddleware, async (req, res) => {
-  const { list_of_subjects, student_grade, userId } = req.body;
+  const { list_of_subjects, student_grade, email } = req.body;
+  const user = await getExistingUser(email);
+  const userId = user[0].id;
   const { startTime, endTime } = getPaidTime();
   let grade = "";
   if (student_grade.includes("4")) {
