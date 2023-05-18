@@ -486,9 +486,18 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
 });
 
 app.post("/getUserId", authMiddleware, async (req, res) => {
-  const { email } = req.body;
-  const user = await getExistingUser(email);
-  return user[0].id;
+  try {
+    const { email } = req.body;
+    const user = await getExistingUser(email);
+    return res.status(200).send({
+      user,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({
+      error,
+    });
+  }
 });
 
 app.post("/enrolPaidUser", authMiddleware, async (req, res) => {
