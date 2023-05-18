@@ -485,6 +485,12 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
   }
 });
 
+app.post("/getUserId", authMiddleware, async (req, res) => {
+  const { email } = req.body;
+  const user = await getExistingUser(email);
+  return user[0].id;
+});
+
 app.post("/enrolPaidUser", authMiddleware, async (req, res) => {
   const { list_of_subjects, student_grade, email } = req.body;
   const user = await getExistingUser(email);
