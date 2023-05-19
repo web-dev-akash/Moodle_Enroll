@@ -516,11 +516,13 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
             });
           }
           return res.status(200).send({
-            user: {
-              id: userExist[0].id,
-              username: userExist[0].email,
-              password: phone,
-            },
+            user: [
+              {
+                id: userExist[0].id,
+                username: userExist[0].email,
+                password: phone,
+              },
+            ],
             status: "trialactivated",
           });
         } catch (error) {
@@ -530,38 +532,46 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
         }
       } else if (subscription == "Trail") {
         return res.status(200).send({
-          user: {
-            id: userExist[0].id,
-            username: userExist[0].email,
-            password: phone,
-          },
+          user: [
+            {
+              id: userExist[0].id,
+              username: userExist[0].email,
+              password: phone,
+            },
+          ],
           status: "trialinprogress",
         });
       } else if (subscription == "Tier 1" || subscription == "Tier 2") {
         return res.status(200).send({
-          user: {
-            id: userExist[0].id,
-            username: userExist[0].email,
-            password: phone,
-          },
+          user: [
+            {
+              id: userExist[0].id,
+              username: userExist[0].email,
+              password: phone,
+            },
+          ],
           status: "alreadyapaiduser",
         });
       } else if (subscription == "Trail Expired") {
         return res.status(200).send({
-          user: {
-            id: userExist[0].id,
-            username: userExist[0].email,
-            password: phone,
-          },
+          user: [
+            {
+              id: userExist[0].id,
+              username: userExist[0].email,
+              password: phone,
+            },
+          ],
           status: "trialexpired",
         });
       } else if (subscription == "Subscription Expired") {
         return res.status(200).send({
-          user: {
-            id: userExist[0].id,
-            username: userExist[0].email,
-            password: phone,
-          },
+          user: [
+            {
+              id: userExist[0].id,
+              username: userExist[0].email,
+              password: phone,
+            },
+          ],
           status: "subscriptionexpired",
         });
       }
