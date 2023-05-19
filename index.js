@@ -489,8 +489,9 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
             userId: uid,
           });
         }
+        user[0].password = phone;
         return res.status(200).send({
-          user: { ...user, password: phone },
+          user,
           status: "trialactivated",
         });
       } catch (error) {
@@ -503,7 +504,7 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
       const subscription = data[data.length - 1].value;
       if (subscription == "NA") {
         try {
-          const userId = user[0].id;
+          const userId = userExist[0].id;
           await updateTrailSubscription(userId, "Trail", endTime);
           for (i = 0; i < 4; i++) {
             const cid = courseFormat[i][grade];
@@ -517,7 +518,7 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
           return res.status(200).send({
             user: {
               id: userExist[0].id,
-              email: userExist[0].email,
+              username: userExist[0].email,
               password: phone,
             },
             status: "trialactivated",
@@ -531,7 +532,7 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
         return res.status(200).send({
           user: {
             id: userExist[0].id,
-            email: userExist[0].email,
+            username: userExist[0].email,
             password: phone,
           },
           status: "trialinprogress",
@@ -540,7 +541,7 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
         return res.status(200).send({
           user: {
             id: userExist[0].id,
-            email: userExist[0].email,
+            username: userExist[0].email,
             password: phone,
           },
           status: "alreadyapaiduser",
@@ -549,7 +550,7 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
         return res.status(200).send({
           user: {
             id: userExist[0].id,
-            email: userExist[0].email,
+            username: userExist[0].email,
             password: phone,
           },
           status: "trialexpired",
@@ -558,7 +559,7 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
         return res.status(200).send({
           user: {
             id: userExist[0].id,
-            email: userExist[0].email,
+            username: userExist[0].email,
             password: phone,
           },
           status: "subscriptionexpired",
