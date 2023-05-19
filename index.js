@@ -10,8 +10,6 @@ const token = process.env.WATI_TOKEN;
 const AUTH_TOKEN = process.env.AUTH_TOKEN;
 const PORT = process.env.PORT || 8080;
 const cron = require("node-cron");
-const EventEmitter = require("events");
-const eventEmitter = new EventEmitter();
 // enroll user to a batch ------------- https://wisechamps.app/webservice/rest/server.php?wstoken=2ae4c24bfc47f91187132239851605e3&wsfunction=
 
 const courseFormat = [
@@ -40,6 +38,21 @@ const courseFormat = [
     G6: "432",
   },
 ];
+
+const allLiveQuizCourses = [
+  "420",
+  "421",
+  "422",
+  "424",
+  "425",
+  "426",
+  "427",
+  "428",
+  "429",
+  "430",
+  "431",
+  "432",
+];
 const wstoken = process.env.WSTOKEN;
 const wsfunctionCreate = "core_user_create_users";
 const wsfunctionEnrol = "enrol_manual_enrol_users";
@@ -64,10 +77,10 @@ const authMiddleware = (req, res, next) => {
 
 const getTrailTime = () => {
   let start = new Date();
-  start.setUTCHours(0, 0, 0, 0);
+  start.setHours(0, 0, 0, 0);
 
   let end = new Date();
-  end.setUTCHours(23, 59, 59, 999);
+  end.setHours(23, 59, 59, 999);
 
   let startTime = Math.floor(start.valueOf() / 1000);
   let endTime = Math.floor(end.valueOf() / 1000) + 604800;
@@ -79,10 +92,10 @@ const getTrailTime = () => {
 
 const getPaidTime = () => {
   let start = new Date();
-  start.setUTCHours(0, 0, 0, 0);
+  start.setHours(0, 0, 0, 0);
 
   let end = new Date();
-  end.setUTCHours(23, 59, 59, 999);
+  end.setHours(23, 59, 59, 999);
 
   let startTime = Math.floor(start.valueOf() / 1000);
   let endTime = Math.floor(end.valueOf() / 1000) + 31536000;
@@ -122,31 +135,16 @@ const getExistingUser = async (username) => {
   return res.data;
 };
 
-// app.get("/weeklySchedule", authMiddleware, async (req, res) => {
-//   try {
-//     const data = await getWeeklySchedule();
-//     return res.status(200).send({
-//       status: "success",
-//       data,
-//     });
-//   } catch (error) {
-//     console.log(error);
-//     return res.status(500).send({
-//       status: "error",
-//       error,
-//     });
-//   }
-// });
-
 const createUser = async ({
   email,
   firstname,
   lastname,
   phone,
   subscription,
+  trialExpiry,
 }) => {
   const res = await axios.post(
-    `${url}?wstoken=${wstoken}&wsfunction=${wsfunctionCreate}&users[0][username]=${email}&users[0][password]=${phone}&users[0][firstname]=${firstname}&users[0][lastname]=${lastname}&users[0][email]=${email}&users[0][phone1]=${phone}&users[0][customfields][0][type]=live_quiz_subscription&users[0][customfields][0][value]=${subscription}&moodlewsrestformat=json`
+    `${url}?wstoken=${wstoken}&wsfunction=${wsfunctionCreate}&users[0][username]=${email}&users[0][password]=${phone}&users[0][firstname]=${firstname}&users[0][lastname]=${lastname}&users[0][email]=${email}&users[0][phone1]=${phone}&users[0][customfields][0][type]=live_quiz_subscription&users[0][customfields][0][value]=${subscription}&users[0][customfields][0][type]=trailexpirydate&users[0][customfields][0][value]=${trialExpiry}&moodlewsrestformat=json`
   );
   return res.data;
 };
@@ -376,17 +374,81 @@ app.post("/getWeeklySchedule", async (req, res) => {
   }
 });
 
-const updateSubscription = async (userId, value) => {
-  const urlS = `${url}?wstoken=${wstoken}&wsfunction=core_user_update_users&&users[0][id]=${userId}&users[0][customfields][0][type]=live_quiz_subscription&users[0][customfields][0][value]=${value}&moodlewsrestformat=json`;
+const updateTrailSubscription = async (userId, subscription, expiry) => {
+  const urlS = `${url}?wstoken=${wstoken}&wsfunction=core_user_update_users&users[0][id]=${userId}&users[0][customfields][0][type]=live_quiz_subscription&users[0][customfields][0][value]=${subscription}&moodlewsrestformat=json`;
+
+  const urlR = `${url}?wstoken=${wstoken}&wsfunction=core_user_update_users&users[0][id]=${userId}&users[0][customfields][0][type]=trailexpirydate&users[0][customfields][0][value]=${expiry}&moodlewsrestformat=json`;
   // console.log(urlS);
   const res = await axios.get(urlS);
+  const res2 = await axios.get(urlR);
   return res.data;
 };
+
+function getUniqueObjects(arr, prop) {
+  const seen = new Set();
+  return arr.filter((obj) => {
+    const key = prop ? obj[prop] : JSON.stringify(obj);
+    return seen.has(key) ? false : seen.add(key);
+  });
+}
+
+const changeSubscriptionType = async () => {
+  let start = new Date().setHours(23, 59, 59, 999);
+  let startTime = Math.floor(start.valueOf() / 1000);
+  const totalLiveQuizUsers = [];
+  try {
+    for (let i = 0; i < 12; i++) {
+      const courseid = allLiveQuizCourses[i];
+      const res = await axios.get(
+        `${url}?wstoken=${wstoken}&wsfunction=core_enrol_get_enrolled_users&courseid=${courseid}&moodlewsrestformat=json`
+      );
+      if (res.data && res.data.length > 0) {
+        const data = res.data;
+        for (let j = 0; j < data.length; j++) {
+          totalLiveQuizUsers.push(data[j]);
+        }
+      }
+    }
+    const filteredUsers = getUniqueObjects(totalLiveQuizUsers, "id");
+    for (let i = 0; i < filteredUsers.length; i++) {
+      const data = filteredUsers[i].customfields;
+      const timestamp = Number(data[data.length - 3].value);
+      if (startTime + 86400 == timestamp) {
+        await updateTrailSubscription(filteredUsers[i].id, "Trail Expired", 0);
+      } else {
+        return false;
+      }
+    }
+    return true;
+  } catch (error) {
+    return error;
+  }
+};
+
+cron.schedule("59 23 * * *", async () => {
+  const data = await changeSubscriptionType();
+  console.log(data);
+});
+
+// app.get("/livequizusers", async (req, res) => {
+//   try {
+//     const data = await changeSubscriptionType();
+//     return res.status(200).send({
+//       data,
+//     });
+//   } catch (error) {
+//     return res.status(500).send({
+//       error,
+//     });
+//   }
+// });
 
 app.post("/createTrailUser", authMiddleware, async (req, res) => {
   try {
     let { email, phone, student_name, student_grade } = req.body;
-    phone = phone.substring(2, 12);
+    if (phone.length > 10) {
+      phone = phone.substring(phone.length - 10, phone.length);
+    }
     const firstname = student_name.split(" ")[0];
     let lastname = "";
     if (student_name.split(" ").length == 1) {
@@ -405,18 +467,19 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
     } else {
       grade = "G6";
     }
-    const user = await getExistingUser(email);
+    const userExist = await getExistingUser(email);
     let { startTime, endTime } = getTrailTime();
-    if (user.length == 0) {
+    if (userExist.length == 0) {
       try {
-        const newUser = await createUser({
+        const user = await createUser({
           email,
           firstname,
           lastname,
           phone,
           subscription: "Trail",
+          trialExpiry: endTime,
         });
-        const uid = newUser[0].id;
+        const uid = user[0].id;
         for (i = 0; i < 4; i++) {
           const cid = courseFormat[i][grade];
           await enrolUserToCourse({
@@ -427,7 +490,7 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
           });
         }
         return res.status(200).send({
-          newUser,
+          user: { ...user, password: phone },
           status: "trialactivated",
         });
       } catch (error) {
@@ -436,12 +499,12 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
         });
       }
     } else {
-      const length = user[0].customfields;
-      const subscription = length[length.length - 1].value;
+      const data = userExist[0].customfields;
+      const subscription = data[data.length - 1].value;
       if (subscription == "NA") {
         try {
           const userId = user[0].id;
-          await updateSubscription(userId, "Trail");
+          await updateTrailSubscription(userId, "Trail", endTime);
           for (i = 0; i < 4; i++) {
             const cid = courseFormat[i][grade];
             await enrolUserToCourse({
@@ -452,6 +515,11 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
             });
           }
           return res.status(200).send({
+            user: {
+              id: userExist[0].id,
+              email: userExist[0].email,
+              password: phone,
+            },
             status: "trialactivated",
           });
         } catch (error) {
@@ -461,18 +529,38 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
         }
       } else if (subscription == "Trail") {
         return res.status(200).send({
+          user: {
+            id: userExist[0].id,
+            email: userExist[0].email,
+            password: phone,
+          },
           status: "trialinprogress",
         });
       } else if (subscription == "Tier 1" || subscription == "Tier 2") {
         return res.status(200).send({
+          user: {
+            id: userExist[0].id,
+            email: userExist[0].email,
+            password: phone,
+          },
           status: "alreadyapaiduser",
         });
       } else if (subscription == "Trail Expired") {
         return res.status(200).send({
+          user: {
+            id: userExist[0].id,
+            email: userExist[0].email,
+            password: phone,
+          },
           status: "trialexpired",
         });
       } else if (subscription == "Subscription Expired") {
         return res.status(200).send({
+          user: {
+            id: userExist[0].id,
+            email: userExist[0].email,
+            password: phone,
+          },
           status: "subscriptionexpired",
         });
       }
@@ -500,6 +588,13 @@ app.post("/getUserId", authMiddleware, async (req, res) => {
   }
 });
 
+const updatePaidSubscription = async (userid, endTime) => {
+  const urlS = `${url}?wstoken=${wstoken}&wsfunction=core_user_update_users&users[0][id]=${userid}&users[0][customfields][0][type]=subscriptionexpirydate&users[0][customfields][0][value]=${endTime}&moodlewsrestformat=json`;
+  // console.log(urlS);
+  const res = await axios.get(urlS);
+  return res.data;
+};
+
 app.post("/enrolPaidUser", authMiddleware, async (req, res) => {
   const { list_of_subjects, student_grade, email } = req.body;
   const user = await getExistingUser(email);
@@ -518,6 +613,7 @@ app.post("/enrolPaidUser", authMiddleware, async (req, res) => {
       message: "Course not found",
     });
   }
+  await updatePaidSubscription(userId, endTime);
   if (list_of_subjects == "Math") {
     try {
       const cid = courseFormat[0][grade];
