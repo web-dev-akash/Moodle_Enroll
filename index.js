@@ -144,7 +144,7 @@ const createUser = async ({
   trialExpiry,
 }) => {
   const res = await axios.post(
-    `${url}?wstoken=${wstoken}&wsfunction=${wsfunctionCreate}&users[0][username]=${email}&users[0][password]=${phone}&users[0][firstname]=${firstname}&users[0][lastname]=${lastname}&users[0][email]=${email}&users[0][phone1]=${phone}&users[0][customfields][0][type]=live_quiz_subscription&users[0][customfields][0][value]=${subscription}&users[0][customfields][0][type]=trailexpirydate&users[0][customfields][0][value]=${trialExpiry}&moodlewsrestformat=json`
+    `${url}?wstoken=${wstoken}&wsfunction=${wsfunctionCreate}&users[0][username]=${email}&users[0][password]=${phone}&users[0][firstname]=${firstname}&users[0][lastname]=${lastname}&users[0][email]=${email}&users[0][phone1]=${phone}&users[0][customfields][0][type]=live_quiz_subscription&users[0][customfields][0][value]=${subscription}&users[0][customfields][1][type]=trailexpirydate&users[0][customfields][1][value]=${trialExpiry}&moodlewsrestformat=json`
   );
   return res.data;
 };
@@ -375,12 +375,8 @@ app.post("/getWeeklySchedule", async (req, res) => {
 });
 
 const updateTrailSubscription = async (userId, subscription, expiry) => {
-  const urlS = `${url}?wstoken=${wstoken}&wsfunction=core_user_update_users&users[0][id]=${userId}&users[0][customfields][0][type]=live_quiz_subscription&users[0][customfields][0][value]=${subscription}&moodlewsrestformat=json`;
-
-  const urlR = `${url}?wstoken=${wstoken}&wsfunction=core_user_update_users&users[0][id]=${userId}&users[0][customfields][0][type]=trailexpirydate&users[0][customfields][0][value]=${expiry}&moodlewsrestformat=json`;
-  // console.log(urlS);
+  const urlS = `${url}?wstoken=${wstoken}&wsfunction=core_user_update_users&users[0][id]=${userId}&users[0][customfields][0][type]=live_quiz_subscription&users[0][customfields][0][value]=${subscription}&users[0][customfields][1][type]=trailexpirydate&users[0][customfields][1][value]=${expiry}&moodlewsrestformat=json`;
   const res = await axios.get(urlS);
-  const res2 = await axios.get(urlR);
   return res.data;
 };
 
@@ -430,18 +426,18 @@ cron.schedule("59 23 * * *", async () => {
   console.log(data);
 });
 
-// app.get("/livequizusers", async (req, res) => {
-//   try {
-//     const data = await changeSubscriptionType();
-//     return res.status(200).send({
-//       data,
-//     });
-//   } catch (error) {
-//     return res.status(500).send({
-//       error,
-//     });
-//   }
-// });
+app.get("/moodle", async (req, res) => {
+  try {
+    const data = req.body;
+    return res.status(200).send({
+      data,
+    });
+  } catch (error) {
+    return res.status(500).send({
+      error,
+    });
+  }
+});
 
 app.post("/createTrailUser", authMiddleware, async (req, res) => {
   try {
@@ -449,13 +445,14 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
     if (phone.length > 10) {
       phone = phone.substring(phone.length - 10, phone.length);
     }
+    email = email.toLowerCase();
     const firstname = student_name.split(" ")[0];
     let lastname = "";
     if (student_name.split(" ").length == 1) {
       lastname = ".";
     } else {
       lastname = student_name.split(" ")[1];
-      if ((lastname[0] = " ")) {
+      if (lastname[0] == " ") {
         lastname = ".";
       }
     }
