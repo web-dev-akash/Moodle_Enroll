@@ -6,7 +6,10 @@ const app = express();
 app.use(express.json());
 const url = `https://wisechamps.app/webservice/rest/server.php`;
 const watiAPI = `https://live-server-105694.wati.io`;
-const token = process.env.WATI_TOKEN;
+const WATI_TOKEN = process.env.WATI_TOKEN;
+const CLIENT_ID = process.env.CLIENT_ID;
+const CLIENT_SECRET = process.env.CLIENT_SECRET;
+const REFRESH_TOKEN = process.env.REFRESH_TOKEN;
 const AUTH_TOKEN = process.env.AUTH_TOKEN;
 const PORT = process.env.PORT || 8080;
 const cron = require("node-cron");
@@ -723,7 +726,7 @@ app.post("/enrolPaidUser", authMiddleware, async (req, res) => {
 const linkShortner = async (url) => {
   const config = {
     headers: {
-      apiKey: "SY8bKAqPYQCrkFkvf8k6qnKCvLkQeYpH",
+      apiKey: process.env.SHORTNER_API,
       "Content-Type": "application/json",
     },
   };
@@ -753,6 +756,73 @@ app.post("/refer", async (req, res) => {
     console.log(response);
     res.status(200).send({
       url: response.short_url,
+    });
+  } catch (error) {
+    res.status(500).send({
+      error,
+    });
+  }
+});
+
+const getZohoToken = async () => {
+  try {
+    const res = await axios.post(
+      `https://accounts.zoho.com/oauth/v2/token?client_id=${CLIENT_ID}&grant_type=refresh_token&client_secret=${CLIENT_SECRET}&refresh_token=${REFRESH_TOKEN}`
+    );
+    console.log(res.data);
+    const token = res.data.access_token;
+    return token;
+  } catch (error) {
+    res.send({
+      error,
+    });
+  }
+};
+
+const updatePointsInZoho = async (phone) => {
+  const token = await getZohoToken();
+  console.log(token);
+  const config = {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  };
+  const res = await axios.get(
+    `https://www.zohoapis.com/crm/v2/Contacts/search?phone=${phone}`,
+    config
+  );
+  res.data;
+};
+
+app.post("/captureReferral", async (req, res) => {
+  try {
+    const { phone } = req.body;
+    const config = {
+      headers: {
+        Authorization: `Bearer ${WATI_TOKEN}`,
+      },
+    };
+    const response = await axios.get(
+      `${watiAPI}/api/v1/getMessages/${phone}`,
+      config
+    );
+    const data = response.data.messages.items;
+    const msg = data.filter((msg) => {
+      if (msg.text) {
+        return msg.text.includes("invited me to experience");
+      }
+      return null;
+    });
+    if (msg.length == 0) {
+      res.status(404).send({
+        status: "No message found",
+      });
+    }
+    const refereePhone = msg.text.substring(29, 41);
+    console.log(refereePhone);
+    const refereeData = await updatePointsInZoho(refereePhone);
+    res.status(200).send({
+      refereeData,
     });
   } catch (error) {
     res.status(500).send({
