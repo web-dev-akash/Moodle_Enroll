@@ -720,96 +720,45 @@ app.post("/enrolPaidUser", authMiddleware, async (req, res) => {
   }
 });
 
-app.post("/webhook", authMiddleware, async (req, res) => {
-  const data = req.body;
-  if (!data.email || !data.name || !data.phone) {
-    return res.status(400).send({
-      result: "error",
-      status: "Incomplete Data",
-    });
-  } else {
-    try {
-      // const response = await createUser({email : data.email, firstname, lastname, phone : data.phone})
-      // console.log(response);
-      return res.status(200).send({
-        result: "success",
-        // data : response
-      });
-    } catch (error) {
-      console.log("User already exists");
-      return res.status(400).send({
-        result: "error",
-        status: "User already exists",
-      });
-    }
-  }
-});
+const linkShortner = async (url) => {
+  const config = {
+    headers: {
+      apiKey: "SY8bKAqPYQCrkFkvf8k6qnKCvLkQeYpH",
+      "Content-Type": "application/json",
+    },
+  };
+  const body = {
+    redirect: "follow",
+    long_url: url,
+  };
+
+  const res = await axios.post(
+    `https://api.apilayer.com/short_url/hash`,
+    body,
+    config
+  );
+  return res.data;
+};
 
 app.post("/refer", async (req, res) => {
-  const data = req.body;
-  // ----------- If the client is interested in referring someone, update the contact with a new refer attribute.-------------------
-  // data.refer = "Interested";
+  try {
+    const data = req.body;
+    const referral_name = data.referral_name;
+    const referee_name = data.referee_name;
+    const phone = data.phone;
 
-  // ------------ Ask for referree's name---------------.
-  // data.referralName = "Akash 2";
-  const student_name = data.student_name;
-  const referree_name = data.referree_name;
-  const phone = data.phone;
+    const referral_link = `https://wa.me/919717094422?text=Hello%20Wisechamps%0A%0A${referee_name}%20with%20${phone}%20invited%20me%20to%20experience%20your%201-week%20live%20quiz%20trial.%20Can%20you%20please%20activate%20my%20trial%3F%0A%0A${referral_name}`;
 
-  const text = `My%20friend%20${data.student_name}%20${phone}%20challenged%20me%20for%20a%20live%20quiz%20${data.referree_name}`;
-
-  const referral_link = `https://api.whatsapp.com/send?phone=+919717094422&text=${text}`;
-  // const link = await shortUrl(referral_link)
-  // const link = truncateUrl(referral_link, 25);
-  // const urlObj = new URL(referral_link);
-  // console.log(link)
-  // const newlink = referral_link.slice(0, 10);
-  // console.log(link)
-  const referralData = [
-    {
-      customParams: [
-        {
-          name: "name",
-          value: student_name,
-        },
-        {
-          name: "referree_name",
-          value: referree_name,
-        },
-        {
-          name: "referral_link",
-          value: link,
-        },
-      ],
-      whatsappNumber: phone,
-    },
-  ];
-
-  // const templateMessage = `HI Akash, ${referral_link}`
-
-  const body = {
-    broadcast_name: "referral_test",
-    receivers: referralData,
-    template_name: "referral_testing",
-  };
-
-  const options = {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "text/json",
-    },
-    body: JSON.stringify(body),
-  };
-  // fetch(`${watiAPI}/api/v1/sendTemplateMessages`, options)
-  //   .then((res) => res.json())
-  //   .then((res) => {
-  //     console.log(res);
-  //   });
-
-  return res.send({
-    referral_link,
-  });
+    const response = await linkShortner(referral_link);
+    console.log(response);
+    res.status(200).send({
+      url: response.short_url,
+    });
+  } catch (error) {
+    res.status(500).send({
+      error,
+    });
+  }
 });
 
 app.listen(PORT, () => {
