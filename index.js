@@ -769,7 +769,6 @@ const getZohoToken = async () => {
     const res = await axios.post(
       `https://accounts.zoho.com/oauth/v2/token?client_id=${CLIENT_ID}&grant_type=refresh_token&client_secret=${CLIENT_SECRET}&refresh_token=${REFRESH_TOKEN}`
     );
-    console.log(res.data);
     const token = res.data.access_token;
     return token;
   } catch (error) {
@@ -779,19 +778,96 @@ const getZohoToken = async () => {
   }
 };
 
-const updatePointsInZoho = async (phone) => {
+const updatePointsInZoho = async (refereePhone, referralPhone) => {
   const token = await getZohoToken();
-  console.log(token);
   const config = {
     headers: {
       Authorization: `Bearer ${token}`,
     },
   };
-  const res = await axios.get(
-    `https://www.zohoapis.com/crm/v2/Contacts/search?phone=${phone}`,
+  const lead = await axios.get(
+    `https://www.zohoapis.com/crm/v2/Contacts/search?phone=${referralPhone}`,
     config
   );
-  res.data;
+  const leadId = lead.data.data[0].id;
+  const contact = await axios.get(
+    `https://www.zohoapis.com/crm/v2/Contacts/search?phone=${refereePhone}`,
+    config
+  );
+  const contactId = contact.data.data[0].id;
+  const referralCount = contact.data.data[0].Referral_Count;
+  let newReferralCount = 0;
+  if (referralCount == null) {
+    newReferralCount = 1;
+  } else {
+    newReferralCount = Number(referralCount) + 1;
+  }
+  const contactBody = {
+    data: [
+      {
+        id: contactId,
+        Referral_Count: newReferralCount,
+        $append_values: {
+          Referral_Count: true,
+        },
+      },
+    ],
+    duplicate_check_fields: ["id"],
+    apply_feature_execution: [
+      {
+        name: "layout_rules",
+      },
+    ],
+    trigger: ["workflow"],
+  };
+
+  const updateContact = await axios.post(
+    `https://www.zohoapis.com/crm/v3/Contacts/upsert`,
+    contactBody,
+    config
+  );
+
+  const deal = await axios.get(
+    `https://www.zohoapis.com/crm/v2/Deals/search?criteria=Contact_Name:equals:${contactId}`,
+    config
+  );
+  const dealId = deal.data.data[0].id;
+  const engagementScore = Number(deal.data.data[0].Engagement_Score);
+  let newEngagementScore = 0;
+  if (newReferralCount == 1) {
+    newEngagementScore = engagementScore + 5;
+  } else if (newReferralCount == 2) {
+    newEngagementScore = engagementScore + 10;
+  } else if (newReferralCount == 3) {
+    newEngagementScore = engagementScore + 15;
+  }
+
+  const dealBody = {
+    data: [
+      {
+        id: dealId,
+        Engagement_Score: newEngagementScore,
+        $append_values: {
+          Engagement_Score: true,
+        },
+      },
+    ],
+    duplicate_check_fields: ["id"],
+    apply_feature_execution: [
+      {
+        name: "layout_rules",
+      },
+    ],
+    trigger: ["workflow"],
+  };
+
+  const updateDeal = await axios.post(
+    `https://www.zohoapis.com/crm/v3/Deals/upsert`,
+    dealBody,
+    config
+  );
+  console.log(updateDeal.data);
+  return deal.data;
 };
 
 app.post("/captureReferral", async (req, res) => {
@@ -818,9 +894,8 @@ app.post("/captureReferral", async (req, res) => {
         status: "No message found",
       });
     }
-    const refereePhone = msg.text.substring(29, 41);
-    console.log(refereePhone);
-    const refereeData = await updatePointsInZoho(refereePhone);
+    const refereePhone = msg[0].text.substring(27, 39);
+    const refereeData = await updatePointsInZoho(refereePhone, phone);
     res.status(200).send({
       refereeData,
     });
@@ -831,6 +906,124 @@ app.post("/captureReferral", async (req, res) => {
   }
 });
 
+const updateTagInZoho = async (phone) => {
+  if (phone.length <= 10) {
+    phone = `91${phone}`;
+  }
+  const res = await axios.post(
+    `https://accounts.zoho.com/oauth/v2/token?client_id=${CLIENT_ID}&grant_type=refresh_token&client_secret=${CLIENT_SECRET}&refresh_token=${REFRESH_TOKEN}`
+  );
+  const token = res.data.access_token;
+  console.log(res.data);
+  const config = {
+    headers: {
+      Authorization: `Zoho-oauthtoken ${token}`,
+      "Content-Type": "application/json",
+    },
+  };
+  const contact = await axios.get(
+    `https://www.zohoapis.com/crm/v3/Contacts/search?phone=${phone}`,
+    config
+  );
+  if (!contact.data) {
+    return "Not a Zoho Contact";
+  }
+  const contactid = contact.data.data[0].id;
+  const dealData = await axios.get(
+    `https://www.zohoapis.com/crm/v3/Deals/search?criteria=((Contact_Name:equals:${contactid}))`,
+    config
+  );
+  if (!dealData.data) {
+    return "Not converted to deal";
+  }
+  const dealid = dealData.data.data[0].id;
+  const body = {
+    tags: [
+      {
+        name: "firstlogin",
+        id: "4878003000000773056",
+        color_code: "#FEDA62",
+      },
+    ],
+  };
+  const updateTag = await axios.post(
+    `https://www.zohoapis.com/crm/v3/Deals/${dealid}/actions/add_tags`,
+    body,
+    config
+  );
+
+  //  const engagementScore = Number(deal.data.data[0].Engagement_Score);
+  //  let newEngagementScore = 0;
+  //  if (newReferralCount == 1) {
+  //    newEngagementScore = engagementScore + 5;
+  //  } else if (newReferralCount == 2) {
+  //    newEngagementScore = engagementScore + 10;
+  //  } else if (newReferralCount == 3) {
+  //    newEngagementScore = engagementScore + 15;
+  //  }
+
+  //  const dealBody = {
+  //    data: [
+  //      {
+  //        id: dealid,
+  //        Engagement_Score: newEngagementScore,
+  //        $append_values: {
+  //          Engagement_Score: true,
+  //        },
+  //      },
+  //    ],
+  //    duplicate_check_fields: ["id"],
+  //    apply_feature_execution: [
+  //      {
+  //        name: "layout_rules",
+  //      },
+  //    ],
+  //    trigger: ["workflow"],
+  //  };
+
+  //  const updateDeal = await axios.post(
+  //    `https://www.zohoapis.com/crm/v3/Deals/upsert`,
+  //    dealBody,
+  //    config
+  //  );
+  return updateTag.data.data;
+};
+
+const getUserFirstAccess = async (data) => {
+  const id = data.userid;
+  const loggedinTime = data.timecreated;
+  const res = await axios.get(
+    `${URL}?wstoken=${WSTOKEN}&wsfunction=core_user_get_users_by_field&field=id&values[0]=${id}&moodlewsrestformat=json`
+  );
+  const firstaccess = res.data[0].firstaccess;
+  const phone = res.data[0].phone1;
+  const loggedDate = new Date(loggedinTime * 1000).toLocaleDateString();
+  const firstDate = new Date(firstaccess * 1000).toLocaleDateString();
+  if (firstDate == loggedDate) {
+    const loggedTime = new Date(loggedinTime * 1000).toLocaleTimeString();
+    const firstTime = new Date(firstaccess * 1000).toLocaleTimeString();
+    console.log(firstTime, loggedTime);
+    if (loggedTime == firstTime) {
+      const zoho = await updateTagInZoho(phone);
+      return { zoho, status: "firstlogin" };
+    }
+  }
+  return { status: "notfirstlogin" };
+};
+
+app.post("/firstLogin", async (req, res) => {
+  try {
+    const data = await getUserFirstAccess(req.body);
+    return res.status(200).send({
+      data,
+    });
+  } catch (error) {
+    return res.status(500).send({
+      error,
+    });
+  }
+});
+
 app.listen(PORT, () => {
-  console.log("Server Started at http://localhost:8080");
+  console.log("Server Started 🎈🎈");
 });
