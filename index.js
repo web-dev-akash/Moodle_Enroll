@@ -7,6 +7,7 @@ app.use(express.json());
 const url = `https://wisechamps.app/webservice/rest/server.php`;
 const watiAPI = `https://live-server-105694.wati.io`;
 const WATI_TOKEN = process.env.WATI_TOKEN;
+const WSTOKEN = process.env.WSTOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
 const REFRESH_TOKEN = process.env.REFRESH_TOKEN;
@@ -601,7 +602,6 @@ app.post("/getUserId", authMiddleware, async (req, res) => {
 
 const updatePaidSubscription = async (userid, endTime) => {
   const urlS = `${url}?wstoken=${wstoken}&wsfunction=core_user_update_users&users[0][id]=${userid}&users[0][customfields][0][type]=subscriptionexpirydate&users[0][customfields][0][value]=${endTime}&moodlewsrestformat=json`;
-  // console.log(urlS);
   const res = await axios.get(urlS);
   return res.data;
 };
@@ -753,7 +753,6 @@ app.post("/refer", async (req, res) => {
     const referral_link = `https://wa.me/919717094422?text=Hello%20Wisechamps%0A%0A${referee_name}%20with%20${phone}%20invited%20me%20to%20experience%20your%201-week%20live%20quiz%20trial.%20Can%20you%20please%20activate%20my%20trial%3F%0A%0A${referral_name}`;
 
     const response = await linkShortner(referral_link);
-    console.log(response);
     res.status(200).send({
       url: response.short_url,
     });
@@ -832,7 +831,10 @@ const updatePointsInZoho = async (refereePhone, referralPhone) => {
     config
   );
   const dealId = deal.data.data[0].id;
-  const engagementScore = Number(deal.data.data[0].Engagement_Score);
+  const engagementScore =
+    deal.data.data[0].Engagement_Score != null
+      ? Number(deal.data.data[0].Engagement_Score)
+      : 0;
   let newEngagementScore = 0;
   if (newReferralCount == 1) {
     newEngagementScore = engagementScore + 5;
@@ -866,7 +868,6 @@ const updatePointsInZoho = async (refereePhone, referralPhone) => {
     dealBody,
     config
   );
-  console.log(updateDeal.data);
   return deal.data;
 };
 
@@ -914,7 +915,6 @@ const updateTagInZoho = async (phone) => {
     `https://accounts.zoho.com/oauth/v2/token?client_id=${CLIENT_ID}&grant_type=refresh_token&client_secret=${CLIENT_SECRET}&refresh_token=${REFRESH_TOKEN}`
   );
   const token = res.data.access_token;
-  console.log(res.data);
   const config = {
     headers: {
       Authorization: `Zoho-oauthtoken ${token}`,
@@ -952,40 +952,35 @@ const updateTagInZoho = async (phone) => {
     config
   );
 
-  //  const engagementScore = Number(deal.data.data[0].Engagement_Score);
-  //  let newEngagementScore = 0;
-  //  if (newReferralCount == 1) {
-  //    newEngagementScore = engagementScore + 5;
-  //  } else if (newReferralCount == 2) {
-  //    newEngagementScore = engagementScore + 10;
-  //  } else if (newReferralCount == 3) {
-  //    newEngagementScore = engagementScore + 15;
-  //  }
+  const engagementScore =
+    deal.data.data[0].Engagement_Score != null
+      ? Number(deal.data.data[0].Engagement_Score)
+      : 0;
+  let newEngagementScore = engagementScore + 10;
+  const dealBody = {
+    data: [
+      {
+        id: dealid,
+        Engagement_Score: newEngagementScore,
+        $append_values: {
+          Engagement_Score: true,
+        },
+      },
+    ],
+    duplicate_check_fields: ["id"],
+    apply_feature_execution: [
+      {
+        name: "layout_rules",
+      },
+    ],
+    trigger: ["workflow"],
+  };
 
-  //  const dealBody = {
-  //    data: [
-  //      {
-  //        id: dealid,
-  //        Engagement_Score: newEngagementScore,
-  //        $append_values: {
-  //          Engagement_Score: true,
-  //        },
-  //      },
-  //    ],
-  //    duplicate_check_fields: ["id"],
-  //    apply_feature_execution: [
-  //      {
-  //        name: "layout_rules",
-  //      },
-  //    ],
-  //    trigger: ["workflow"],
-  //  };
-
-  //  const updateDeal = await axios.post(
-  //    `https://www.zohoapis.com/crm/v3/Deals/upsert`,
-  //    dealBody,
-  //    config
-  //  );
+  const updateDeal = await axios.post(
+    `https://www.zohoapis.com/crm/v3/Deals/upsert`,
+    dealBody,
+    config
+  );
   return updateTag.data.data;
 };
 
@@ -1002,7 +997,6 @@ const getUserFirstAccess = async (data) => {
   if (firstDate == loggedDate) {
     const loggedTime = new Date(loggedinTime * 1000).toLocaleTimeString();
     const firstTime = new Date(firstaccess * 1000).toLocaleTimeString();
-    console.log(firstTime, loggedTime);
     if (loggedTime == firstTime) {
       const zoho = await updateTagInZoho(phone);
       return { zoho, status: "firstlogin" };
