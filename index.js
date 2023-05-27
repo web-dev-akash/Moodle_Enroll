@@ -1018,6 +1018,123 @@ app.post("/firstLogin", async (req, res) => {
   }
 });
 
+const upadeScoreinZoho = async (phone, addScore) => {
+  if (phone.length <= 10) {
+    phone = `91${phone}`;
+  }
+  const res = await axios.post(
+    `https://accounts.zoho.com/oauth/v2/token?client_id=${CLIENT_ID}&grant_type=refresh_token&client_secret=${CLIENT_SECRET}&refresh_token=${REFRESH_TOKEN}`
+  );
+  const token = res.data.access_token;
+  const config = {
+    headers: {
+      Authorization: `Zoho-oauthtoken ${token}`,
+      "Content-Type": "application/json",
+    },
+  };
+  const contact = await axios.get(
+    `https://www.zohoapis.com/crm/v3/Contacts/search?phone=${phone}`,
+    config
+  );
+  if (!contact.data) {
+    return "Not a Zoho Contact";
+  }
+  const contactid = contact.data.data[0].id;
+  const dealData = await axios.get(
+    `https://www.zohoapis.com/crm/v3/Deals/search?criteria=((Contact_Name:equals:${contactid}))`,
+    config
+  );
+  if (!dealData.data) {
+    return "Not converted to deal";
+  }
+  const dealid = dealData.data.data[0].id;
+  const engagementScore =
+    deal.data.data[0].Engagement_Score != null
+      ? Number(deal.data.data[0].Engagement_Score)
+      : 0;
+  let newEngagementScore = engagementScore + addScore;
+  const dealBody = {
+    data: [
+      {
+        id: dealid,
+        Engagement_Score: newEngagementScore,
+        $append_values: {
+          Engagement_Score: true,
+        },
+      },
+    ],
+    duplicate_check_fields: ["id"],
+    apply_feature_execution: [
+      {
+        name: "layout_rules",
+      },
+    ],
+    trigger: ["workflow"],
+  };
+
+  const updateDeal = await axios.post(
+    `https://www.zohoapis.com/crm/v3/Deals/upsert`,
+    dealBody,
+    config
+  );
+  return updateDeal.data;
+};
+
+const getRegularLogin = async (data) => {
+  const id = data.userid;
+  const loggedinTime = data.timecreated;
+  const res = await axios.get(
+    `${URL}?wstoken=${WSTOKEN}&wsfunction=core_user_get_users_by_field&field=id&values[0]=${id}&moodlewsrestformat=json`
+  );
+  const firstaccess = res.data[0].firstaccess;
+  const phone = res.data[0].phone1;
+  const loggedDate = new Date(loggedinTime * 1000).toLocaleDateString();
+  const firstDate = new Date(
+    (Number(firstaccess) + 86400) * 1000
+  ).toLocaleDateString();
+  const secondDate = new Date(
+    (Number(firstaccess) + 172800) * 1000
+  ).toLocaleDateString();
+  const thirdDate = new Date(
+    (Number(firstaccess) + 259200) * 1000
+  ).toLocaleDateString();
+  const fourthDate = new Date(
+    (Number(firstaccess) + 345600) * 1000
+  ).toLocaleDateString();
+  const fifthDate = new Date(
+    (Number(firstaccess) + 432000) * 1000
+  ).toLocaleDateString();
+  let result = "";
+  if (loggedDate == firstDate) {
+    result = await upadeScoreinZoho(phone, 2);
+  } else if (loggedDate == secondDate) {
+    result = await upadeScoreinZoho(phone, 3);
+  } else if (loggedDate == thirdDate) {
+    result = await upadeScoreinZoho(phone, 5);
+  } else if (loggedDate == fourthDate) {
+    result = await upadeScoreinZoho(phone, 10);
+  } else if (loggedDate == fifthDate) {
+    result = await upadeScoreinZoho(phone, 20);
+  }
+  if (result == "") {
+    return "More than 5 Days";
+  }
+  return result;
+};
+
+app.post("/regularLogin", async (req, res) => {
+  try {
+    const data = await getUserFirstAccess(req.body);
+    return res.status(200).send({
+      data,
+    });
+  } catch (error) {
+    return res.status(500).send({
+      error,
+    });
+  }
+});
+
 app.listen(PORT, () => {
   console.log("Server Started 🎈🎈");
 });
