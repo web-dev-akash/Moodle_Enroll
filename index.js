@@ -173,7 +173,7 @@ app.get("/", (req, res) => {
   });
 });
 
-app.post("/getWeeklySchedule", async (req, res) => {
+app.get("/getWeeklySchedule", async (req, res) => {
   try {
     const phone = req.query.phone;
     const getConfig = {
