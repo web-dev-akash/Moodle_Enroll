@@ -234,7 +234,7 @@ app.get("/getWeeklySchedule", async (req, res) => {
                       date: new Date(
                         weeklyData[j].events[k].timestart * 1000
                       ).toLocaleDateString(),
-                      time: new Date(time * 1000).toLocaleTimeString(),
+                      time,
                     });
                   }
                 }
@@ -266,7 +266,7 @@ app.get("/getWeeklySchedule", async (req, res) => {
                       date: new Date(
                         weeklyData[j].events[k].timestart * 1000
                       ).toLocaleDateString(),
-                      time: new Date(time * 1000).toLocaleTimeString(),
+                      time,
                     });
                   }
                 }
@@ -298,7 +298,7 @@ app.get("/getWeeklySchedule", async (req, res) => {
                       date: new Date(
                         weeklyData[j].events[k].timestart * 1000
                       ).toLocaleDateString(),
-                      time: new Date(time * 1000).toLocaleTimeString(),
+                      time,
                     });
                   }
                 }
@@ -330,7 +330,7 @@ app.get("/getWeeklySchedule", async (req, res) => {
                       date: new Date(
                         weeklyData[j].events[k].timestart * 1000
                       ).toLocaleDateString(),
-                      time: new Date(time * 1000).toLocaleTimeString(),
+                      time,
                     });
                   }
                 }
@@ -378,7 +378,7 @@ app.get("/getWeeklySchedule", async (req, res) => {
                         date: new Date(
                           weeklyData[j].events[k].timestart * 1000
                         ).toLocaleDateString(),
-                        time: new Date(time * 1000).toLocaleTimeString(),
+                        time,
                       });
                     }
                   }
