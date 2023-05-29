@@ -1117,14 +1117,14 @@ const getRegularLogin = async (data) => {
     result = await upadeScoreinZoho(phone, 20);
   }
   if (result == "") {
-    return "More than 5 Days";
+    return { status: "More than 5 Days" };
   }
   return result;
 };
 
 app.post("/regularLogin", async (req, res) => {
   try {
-    const data = await getUserFirstAccess(req.body);
+    const data = await getRegularLogin(req.body);
     return res.status(200).send({
       data,
     });
