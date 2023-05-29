@@ -185,7 +185,7 @@ app.get("/getWeeklySchedule", async (req, res) => {
       `https://live-server-105694.wati.io/api/v1/getContacts?attribute=%5B%7Bname%3A%20%22phone%22%2C%20operator%3A%20%22contain%22%2C%20value%3A%20%22${phone}%22%7D%5D`,
       getConfig
     );
-    if (!getData.data || getData.data.length == 0) {
+    if (!getData.data || getData.data.contact_list.length == 0) {
       return res.status(404).send({
         status: "User not found with this number",
       });
