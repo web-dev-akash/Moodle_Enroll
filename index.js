@@ -175,7 +175,31 @@ app.get("/", (req, res) => {
 
 app.post("/getWeeklySchedule", async (req, res) => {
   try {
-    const { list_of_subjects, student_grade } = req.body;
+    const phone = req.query.phone;
+    const getConfig = {
+      headers: {
+        Authorization: `Bearer ${WATI_TOKEN}`,
+      },
+    };
+    const getData = await axios.get(
+      `https://live-server-105694.wati.io/api/v1/getContacts?attribute=%5B%7Bname%3A%20%22phone%22%2C%20operator%3A%20%22contain%22%2C%20value%3A%20%22${phone}%22%7D%5D`,
+      getConfig
+    );
+    if (!getData.data || getData.data.length == 0) {
+      return res.status(404).send({
+        status: "User not found with this number",
+      });
+    }
+    const result = getData.data.contact_list[0].customParams;
+    let list_of_subjects = "",
+      student_grade = "";
+    for (let i = 0; i < result.length; i++) {
+      if (result[i].name == "student_grade") {
+        student_grade = result[i].value;
+      } else if (result[i].name == "list_of_subjects") {
+        list_of_subjects = result[i].value;
+      }
+    }
     const finalWeeklyData = [];
     const weeklyData = await getWeeklySchedule();
     let grade = "";
