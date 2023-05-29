@@ -229,7 +229,7 @@ app.get("/getWeeklySchedule", async (req, res) => {
                   if (weeklyData[j].events[k].instance == data[i].instance) {
                     let time = weeklyData[j].events[k].timestart - 2400;
                     finalWeeklyData.push({
-                      subject,
+                      subject: list_of_subjects,
                       name: res.name,
                       date: new Date(
                         weeklyData[j].events[k].timestart * 1000
@@ -261,7 +261,7 @@ app.get("/getWeeklySchedule", async (req, res) => {
                   if (weeklyData[j].events[k].instance == data[i].instance) {
                     let time = weeklyData[j].events[k].timestart - 2400;
                     finalWeeklyData.push({
-                      subject,
+                      subject: list_of_subjects,
                       name: res.name,
                       date: new Date(
                         weeklyData[j].events[k].timestart * 1000
@@ -293,7 +293,7 @@ app.get("/getWeeklySchedule", async (req, res) => {
                   if (weeklyData[j].events[k].instance == data[i].instance) {
                     let time = weeklyData[j].events[k].timestart - 2400;
                     finalWeeklyData.push({
-                      subject,
+                      subject: list_of_subjects,
                       name: res.name,
                       date: new Date(
                         weeklyData[j].events[k].timestart * 1000
@@ -325,7 +325,7 @@ app.get("/getWeeklySchedule", async (req, res) => {
                   if (weeklyData[j].events[k].instance == data[i].instance) {
                     let time = weeklyData[j].events[k].timestart - 2400;
                     finalWeeklyData.push({
-                      subject,
+                      subject: list_of_subjects,
                       name: res.name,
                       date: new Date(
                         weeklyData[j].events[k].timestart * 1000
