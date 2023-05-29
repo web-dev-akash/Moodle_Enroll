@@ -173,193 +173,51 @@ app.get("/", (req, res) => {
   });
 });
 
-const getWeeklyScheduleData = async (phone) => {
-  const finalWeeklyData = [];
-  const getConfig = {
-    headers: {
-      Authorization: `Bearer ${WATI_TOKEN}`,
-    },
-  };
-  const getData = await axios.get(
-    `https://live-server-105694.wati.io/api/v1/getContacts?attribute=%5B%7Bname%3A%20%22phone%22%2C%20operator%3A%20%22contain%22%2C%20value%3A%20%22${phone}%22%7D%5D`,
-    getConfig
-  );
-  if (!getData.data || getData.data.contact_list.length == 0) {
-    return res.status(404).send({
-      status: "User not found with this number",
-    });
-  }
-  const result = getData.data.contact_list[0].customParams;
-  let list_of_subjects = "",
-    student_grade = "";
-  for (let i = 0; i < result.length; i++) {
-    if (result[i].name == "student_grade") {
-      student_grade = result[i].value;
-    } else if (result[i].name == "list_of_subjects") {
-      list_of_subjects = result[i].value;
-    }
-  }
-  const weeklyData = await getWeeklySchedule();
-  let grade = "";
-  if (student_grade.includes("4")) {
-    grade = "G4";
-  } else if (student_grade.includes("5")) {
-    grade = "G5";
-  } else if (student_grade.includes("6")) {
-    grade = "G6";
-  } else {
-    return res.status(404).send({
-      status: "error",
-      message: "Course not found",
-    });
-  }
-  if (list_of_subjects == "Math") {
-    try {
-      const cid = courseFormat[0][grade];
-      const courseData = await getCourseContent(cid);
-      courseData.map((res) => {
-        const data = res.modules;
-        if (data.length > 0) {
-          for (let i = 0; i < data.length; i++) {
-            for (let j = 0; j < weeklyData.length; j++) {
-              let events = weeklyData[j].events;
-              for (let k = 0; k < events.length; k++) {
-                if (weeklyData[j].events[k].instance == data[i].instance) {
-                  let time = weeklyData[j].events[k].timestart - 2400;
-                  finalWeeklyData.push({
-                    subject: list_of_subjects,
-                    name: res.name,
-                    date: new Date(
-                      weeklyData[j].events[k].timestart * 1000
-                    ).toLocaleDateString(),
-                    time,
-                  });
-                }
-              }
-            }
-          }
-        }
-      });
-    } catch (error) {
-      return res.status(500).send({
-        error,
+app.get("/getWeeklySchedule", async (req, res) => {
+  try {
+    const phone = req.query.phone;
+    const finalWeeklyData = [];
+    const getConfig = {
+      headers: {
+        Authorization: `Bearer ${WATI_TOKEN}`,
+      },
+    };
+    const getData = await axios.get(
+      `https://live-server-105694.wati.io/api/v1/getContacts?attribute=%5B%7Bname%3A%20%22phone%22%2C%20operator%3A%20%22contain%22%2C%20value%3A%20%22${phone}%22%7D%5D`,
+      getConfig
+    );
+    if (!getData.data || getData.data.contact_list.length == 0) {
+      return res.status(404).send({
+        status: "User not found with this number",
       });
     }
-  } else if (list_of_subjects == "English") {
-    try {
-      const cid = courseFormat[1][grade];
-      const courseData = await getCourseContent(cid);
-      courseData.map((res) => {
-        const data = res.modules;
-        if (data.length > 0) {
-          for (let i = 0; i < data.length; i++) {
-            for (let j = 0; j < weeklyData.length; j++) {
-              let events = weeklyData[j].events;
-              for (let k = 0; k < events.length; k++) {
-                if (weeklyData[j].events[k].instance == data[i].instance) {
-                  let time = weeklyData[j].events[k].timestart - 2400;
-                  finalWeeklyData.push({
-                    subject: list_of_subjects,
-                    name: res.name,
-                    date: new Date(
-                      weeklyData[j].events[k].timestart * 1000
-                    ).toLocaleDateString(),
-                    time,
-                  });
-                }
-              }
-            }
-          }
-        }
-      });
-    } catch (error) {
-      return res.status(500).send({
-        error,
+    const result = getData.data.contact_list[0].customParams;
+    let list_of_subjects = "",
+      student_grade = "";
+    for (let i = 0; i < result.length; i++) {
+      if (result[i].name == "student_grade") {
+        student_grade = result[i].value;
+      } else if (result[i].name == "list_of_subjects") {
+        list_of_subjects = result[i].value;
+      }
+    }
+    const weeklyData = await getWeeklySchedule();
+    let grade = "";
+    if (student_grade.includes("4")) {
+      grade = "G4";
+    } else if (student_grade.includes("5")) {
+      grade = "G5";
+    } else if (student_grade.includes("6")) {
+      grade = "G6";
+    } else {
+      return res.status(404).send({
+        status: "error",
+        message: "Course not found",
       });
     }
-  } else if (list_of_subjects == "Science") {
-    try {
-      const cid = courseFormat[2][grade];
-      const courseData = await getCourseContent(cid);
-      courseData.map((res) => {
-        const data = res.modules;
-        if (data.length > 0) {
-          for (let i = 0; i < data.length; i++) {
-            for (let j = 0; j < weeklyData.length; j++) {
-              let events = weeklyData[j].events;
-              for (let k = 0; k < events.length; k++) {
-                if (weeklyData[j].events[k].instance == data[i].instance) {
-                  let time = weeklyData[j].events[k].timestart - 2400;
-                  finalWeeklyData.push({
-                    subject: list_of_subjects,
-                    name: res.name,
-                    date: new Date(
-                      weeklyData[j].events[k].timestart * 1000
-                    ).toLocaleDateString(),
-                    time,
-                  });
-                }
-              }
-            }
-          }
-        }
-      });
-    } catch (error) {
-      return res.status(500).send({
-        error,
-      });
-    }
-  } else if (list_of_subjects == "GK") {
-    try {
-      const cid = courseFormat[3][grade];
-      const courseData = await getCourseContent(cid);
-      courseData.map((res) => {
-        const data = res.modules;
-        if (data.length > 0) {
-          for (let i = 0; i < data.length; i++) {
-            for (let j = 0; j < weeklyData.length; j++) {
-              let events = weeklyData[j].events;
-              for (let k = 0; k < events.length; k++) {
-                if (weeklyData[j].events[k].instance == data[i].instance) {
-                  let time = weeklyData[j].events[k].timestart - 2400;
-                  finalWeeklyData.push({
-                    subject: list_of_subjects,
-                    name: res.name,
-                    date: new Date(
-                      weeklyData[j].events[k].timestart * 1000
-                    ).toLocaleDateString(),
-                    time,
-                  });
-                }
-              }
-            }
-          }
-        }
-      });
-    } catch (error) {
-      return res.status(500).send({
-        error,
-      });
-    }
-  } else if (
-    list_of_subjects.includes("GK") &&
-    list_of_subjects.includes("Science") &&
-    list_of_subjects.includes("English") &&
-    list_of_subjects.includes("Math")
-  ) {
-    try {
-      for (x = 0; x < 4; x++) {
-        const cid = courseFormat[x][grade];
-        let subject = "";
-        if (x == 0) {
-          subject = "Math";
-        } else if (x == 1) {
-          subject = "English";
-        } else if (x == 2) {
-          subject = "Science";
-        } else if (x == 3) {
-          subject = "GK";
-        }
+    if (list_of_subjects == "Math") {
+      try {
+        const cid = courseFormat[0][grade];
         const courseData = await getCourseContent(cid);
         courseData.map((res) => {
           const data = res.modules;
@@ -371,7 +229,7 @@ const getWeeklyScheduleData = async (phone) => {
                   if (weeklyData[j].events[k].instance == data[i].instance) {
                     let time = weeklyData[j].events[k].timestart - 2400;
                     finalWeeklyData.push({
-                      subject,
+                      subject: list_of_subjects,
                       name: res.name,
                       date: new Date(
                         weeklyData[j].events[k].timestart * 1000
@@ -384,24 +242,160 @@ const getWeeklyScheduleData = async (phone) => {
             }
           }
         });
+      } catch (error) {
+        return res.status(500).send({
+          error,
+        });
       }
-    } catch (error) {
-      return res.status(500).send({
-        error,
-      });
+    } else if (list_of_subjects == "English") {
+      try {
+        const cid = courseFormat[1][grade];
+        const courseData = await getCourseContent(cid);
+        courseData.map((res) => {
+          const data = res.modules;
+          if (data.length > 0) {
+            for (let i = 0; i < data.length; i++) {
+              for (let j = 0; j < weeklyData.length; j++) {
+                let events = weeklyData[j].events;
+                for (let k = 0; k < events.length; k++) {
+                  if (weeklyData[j].events[k].instance == data[i].instance) {
+                    let time = weeklyData[j].events[k].timestart - 2400;
+                    finalWeeklyData.push({
+                      subject: list_of_subjects,
+                      name: res.name,
+                      date: new Date(
+                        weeklyData[j].events[k].timestart * 1000
+                      ).toLocaleDateString(),
+                      time,
+                    });
+                  }
+                }
+              }
+            }
+          }
+        });
+      } catch (error) {
+        return res.status(500).send({
+          error,
+        });
+      }
+    } else if (list_of_subjects == "Science") {
+      try {
+        const cid = courseFormat[2][grade];
+        const courseData = await getCourseContent(cid);
+        courseData.map((res) => {
+          const data = res.modules;
+          if (data.length > 0) {
+            for (let i = 0; i < data.length; i++) {
+              for (let j = 0; j < weeklyData.length; j++) {
+                let events = weeklyData[j].events;
+                for (let k = 0; k < events.length; k++) {
+                  if (weeklyData[j].events[k].instance == data[i].instance) {
+                    let time = weeklyData[j].events[k].timestart - 2400;
+                    finalWeeklyData.push({
+                      subject: list_of_subjects,
+                      name: res.name,
+                      date: new Date(
+                        weeklyData[j].events[k].timestart * 1000
+                      ).toLocaleDateString(),
+                      time,
+                    });
+                  }
+                }
+              }
+            }
+          }
+        });
+      } catch (error) {
+        return res.status(500).send({
+          error,
+        });
+      }
+    } else if (list_of_subjects == "GK") {
+      try {
+        const cid = courseFormat[3][grade];
+        const courseData = await getCourseContent(cid);
+        courseData.map((res) => {
+          const data = res.modules;
+          if (data.length > 0) {
+            for (let i = 0; i < data.length; i++) {
+              for (let j = 0; j < weeklyData.length; j++) {
+                let events = weeklyData[j].events;
+                for (let k = 0; k < events.length; k++) {
+                  if (weeklyData[j].events[k].instance == data[i].instance) {
+                    let time = weeklyData[j].events[k].timestart - 2400;
+                    finalWeeklyData.push({
+                      subject: list_of_subjects,
+                      name: res.name,
+                      date: new Date(
+                        weeklyData[j].events[k].timestart * 1000
+                      ).toLocaleDateString(),
+                      time,
+                    });
+                  }
+                }
+              }
+            }
+          }
+        });
+      } catch (error) {
+        return res.status(500).send({
+          error,
+        });
+      }
+    } else if (
+      list_of_subjects.includes("GK") &&
+      list_of_subjects.includes("Science") &&
+      list_of_subjects.includes("English") &&
+      list_of_subjects.includes("Math")
+    ) {
+      try {
+        for (x = 0; x < 4; x++) {
+          const cid = courseFormat[x][grade];
+          let subject = "";
+          if (x == 0) {
+            subject = "Math";
+          } else if (x == 1) {
+            subject = "English";
+          } else if (x == 2) {
+            subject = "Science";
+          } else if (x == 3) {
+            subject = "GK";
+          }
+          const courseData = await getCourseContent(cid);
+          courseData.map((res) => {
+            const data = res.modules;
+            if (data.length > 0) {
+              for (let i = 0; i < data.length; i++) {
+                for (let j = 0; j < weeklyData.length; j++) {
+                  let events = weeklyData[j].events;
+                  for (let k = 0; k < events.length; k++) {
+                    if (weeklyData[j].events[k].instance == data[i].instance) {
+                      let time = weeklyData[j].events[k].timestart - 2400;
+                      finalWeeklyData.push({
+                        subject,
+                        name: res.name,
+                        date: new Date(
+                          weeklyData[j].events[k].timestart * 1000
+                        ).toLocaleDateString(),
+                        time,
+                      });
+                    }
+                  }
+                }
+              }
+            }
+          });
+        }
+      } catch (error) {
+        return res.status(500).send({
+          error,
+        });
+      }
     }
-  }
-  return finalWeeklyData;
-};
-
-app.get("/getWeeklySchedule", async (req, res) => {
-  try {
-    const phone = req.query.phone;
-    const data = await getWeeklyScheduleData(phone);
-    console.log(data);
     return res.status(200).send({
       status: "success",
-      data,
+      data: finalWeeklyData,
     });
   } catch (error) {
     console.log(error);
