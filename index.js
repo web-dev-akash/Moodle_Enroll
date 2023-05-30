@@ -1,9 +1,12 @@
 const express = require("express");
-const jwt = require("jsonwebtoken");
+const cors = require("cors");
 const axios = require("axios");
 require("dotenv").config();
+const percentile = require("percentile");
 const app = express();
 app.use(express.json());
+
+app.use(cors());
 const url = `https://wisechamps.app/webservice/rest/server.php`;
 const watiAPI = `https://live-server-105694.wati.io`;
 const WATI_TOKEN = process.env.WATI_TOKEN;
@@ -14,7 +17,6 @@ const REFRESH_TOKEN = process.env.REFRESH_TOKEN;
 const AUTH_TOKEN = process.env.AUTH_TOKEN;
 const PORT = process.env.PORT || 8080;
 const cron = require("node-cron");
-// enroll user to a batch ------------- https://wisechamps.app/webservice/rest/server.php?wstoken=2ae4c24bfc47f91187132239851605e3&wsfunction=
 
 const courseFormat = [
   {
@@ -1155,6 +1157,86 @@ app.post("/regularLogin", async (req, res) => {
     const data = await getRegularLogin(req.body);
     return res.status(200).send({
       data,
+    });
+  } catch (error) {
+    return res.status(500).send({
+      error,
+    });
+  }
+});
+
+const percentage = (partialValue, totalValue) => {
+  return (100 * partialValue) / totalValue;
+};
+
+app.get("/reports", async (req, res) => {
+  try {
+    const email = req.query.email;
+    const grades = [4, 5, 6, 7];
+    const users = [];
+    const percentArray = [];
+    const id = "1J8T_fBa23LwSRoQIv4RAd1_1fhQ0UtQYtC7q6iJHA1A";
+    const gid = "116082223";
+    const url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json&tq&gid=${gid}`;
+    const config = {
+      headers: {
+        "Content-Type": "text/xml",
+      },
+    };
+    const txt = await axios.get(url, config);
+    const txt2 = txt.data;
+    var jsonString = txt2.slice(47, -2);
+    const response = JSON.parse([jsonString]);
+    const rows = response.table.rows;
+    for (let i = 0; i < rows.length; i++) {
+      const email = rows[i].c[3].v;
+      const correct = rows[i].c[2].v;
+      const attempted = rows[i].c[6].v;
+      const polled = rows[i].c[7].v;
+      const grade = rows[i].c[8].v;
+      const percent = percentage(correct, polled);
+      percentArray.push({ email, percent, grade });
+      const user = {
+        email,
+        correct,
+        attempted,
+        polled,
+        percent,
+      };
+      users.push(user);
+    }
+    const sortedPercentArray = percentArray.sort(
+      (a, b) => a.percent - b.percent
+    );
+    const percentileArray = [];
+    for (let j = 0; j < grades.length; j++) {
+      const grade = grades[j];
+      const data = sortedPercentArray.filter((user) => {
+        return user.grade == grade;
+      });
+      for (let i = 0; i < data.length; i++) {
+        const p = Math.round((i / data.length) * 100);
+        percentileArray.push({
+          email: data[i].email,
+          percent: data[i].percent,
+          grade: data[i].grade,
+          percentile: p,
+        });
+      }
+    }
+    const percentMap = new Map();
+    for (const item of percentileArray) {
+      const { percent, percentile } = item;
+      if (!percentMap.has(percent) || percentile > percentMap.get(percent)) {
+        percentMap.set(percent, percentile);
+      }
+    }
+    for (const item of percentileArray) {
+      const { percent } = item;
+      item.percentile = percentMap.get(percent);
+    }
+    return res.status(200).send({
+      percentileArray,
     });
   } catch (error) {
     return res.status(500).send({
