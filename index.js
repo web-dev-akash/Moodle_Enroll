@@ -1193,7 +1193,7 @@ app.get("/reports", async (req, res) => {
       const polled = rows[i].c[7].v;
       const grade = rows[i].c[8].v;
       const percent = percentage(correct, polled);
-      percentArray.push({ email, percent, grade, attempted, correct });
+      percentArray.push({ email, percent, grade, attempted, correct, polled });
     }
     const sortedPercentArray = percentArray.sort(
       (a, b) => a.percent - b.percent
@@ -1212,6 +1212,7 @@ app.get("/reports", async (req, res) => {
           grade: data[i].grade,
           attempted: data[i].attempted,
           correct: data[i].correct,
+          polled: data[i].polled,
           percentile: p,
         });
       }
