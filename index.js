@@ -2,7 +2,6 @@ const express = require("express");
 const cors = require("cors");
 const axios = require("axios");
 require("dotenv").config();
-const percentile = require("percentile");
 const app = express();
 app.use(express.json());
 
@@ -1173,7 +1172,6 @@ app.get("/reports", async (req, res) => {
   try {
     const email = req.query.email;
     const grades = [4, 5, 6, 7];
-    const users = [];
     const percentArray = [];
     const id = "1J8T_fBa23LwSRoQIv4RAd1_1fhQ0UtQYtC7q6iJHA1A";
     const gid = "116082223";
@@ -1195,15 +1193,7 @@ app.get("/reports", async (req, res) => {
       const polled = rows[i].c[7].v;
       const grade = rows[i].c[8].v;
       const percent = percentage(correct, polled);
-      percentArray.push({ email, percent, grade });
-      const user = {
-        email,
-        correct,
-        attempted,
-        polled,
-        percent,
-      };
-      users.push(user);
+      percentArray.push({ email, percent, grade, attempted, correct });
     }
     const sortedPercentArray = percentArray.sort(
       (a, b) => a.percent - b.percent
@@ -1235,8 +1225,17 @@ app.get("/reports", async (req, res) => {
       const { percent } = item;
       item.percentile = percentMap.get(percent);
     }
+    const user = percentileArray.filter((value) => {
+      return value.email === email;
+    });
+    if (!user || user.length == 0) {
+      return res.status(404).send({
+        status: "error",
+        message: "User not found",
+      });
+    }
     return res.status(200).send({
-      percentileArray,
+      user,
     });
   } catch (error) {
     return res.status(500).send({
