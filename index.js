@@ -1210,6 +1210,8 @@ app.get("/reports", async (req, res) => {
           email: data[i].email,
           percent: data[i].percent,
           grade: data[i].grade,
+          attempted: data[i].attempted,
+          correct: data[i].correct,
           percentile: p,
         });
       }
