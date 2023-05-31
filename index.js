@@ -1165,7 +1165,7 @@ app.post("/regularLogin", async (req, res) => {
 });
 
 const percentage = (partialValue, totalValue) => {
-  return (100 * partialValue) / totalValue;
+  return Math.round((100 * partialValue) / totalValue);
 };
 
 app.get("/reports", async (req, res) => {
@@ -1186,20 +1186,52 @@ app.get("/reports", async (req, res) => {
     var jsonString = txt2.slice(47, -2);
     const response = JSON.parse([jsonString]);
     const rows = response.table.rows;
+    const aggregatedData = [];
     for (let i = 0; i < rows.length; i++) {
       const email = rows[i].c[3].v;
       const correct = rows[i].c[2].v;
       const attempted = rows[i].c[6].v;
       const polled = rows[i].c[7].v;
       const grade = rows[i].c[8].v;
+      const existingUser = aggregatedData.find((user) => user.email === email);
+
+      if (existingUser) {
+        existingUser.correct += correct;
+        existingUser.attempted += attempted;
+        existingUser.polled += polled;
+      } else {
+        const newUser = {
+          email: email,
+          grade: grade,
+          correct: correct,
+          attempted: attempted,
+          polled: polled,
+        };
+        aggregatedData.push(newUser);
+      }
+    }
+    for (let i = 0; i < aggregatedData.length; i++) {
+      const email = aggregatedData[i].email;
+      const correct = aggregatedData[i].correct;
+      const attempted = aggregatedData[i].attempted;
+      const polled = aggregatedData[i].polled;
+      const grade = aggregatedData[i].grade;
       const percent = percentage(correct, polled);
-      percentArray.push({ email, percent, grade, attempted, correct, polled });
+      percentArray.push({
+        email,
+        percent,
+        grade,
+        attempted,
+        correct,
+        polled,
+      });
     }
     const sortedPercentArray = percentArray.sort(
       (a, b) => a.percent - b.percent
     );
-    const percentileArray = [];
+    const finalData = [];
     for (let j = 0; j < grades.length; j++) {
+      const percentileArray = [];
       const grade = grades[j];
       const data = sortedPercentArray.filter((user) => {
         return user.grade == grade;
@@ -1213,22 +1245,25 @@ app.get("/reports", async (req, res) => {
           attempted: data[i].attempted,
           correct: data[i].correct,
           polled: data[i].polled,
+          sessionid: data[i].sessionid,
           percentile: p,
         });
       }
-    }
-    const percentMap = new Map();
-    for (const item of percentileArray) {
-      const { percent, percentile } = item;
-      if (!percentMap.has(percent) || percentile > percentMap.get(percent)) {
-        percentMap.set(percent, percentile);
+      const percentMap = new Map();
+      for (const item of percentileArray) {
+        const { percent, percentile } = item;
+        if (!percentMap.has(percent) || percentile > percentMap.get(percent)) {
+          percentMap.set(percent, percentile);
+        }
       }
+      for (const item of percentileArray) {
+        const { percent } = item;
+        item.percentile = percentMap.get(percent);
+      }
+      finalData.push(...percentileArray);
     }
-    for (const item of percentileArray) {
-      const { percent } = item;
-      item.percentile = percentMap.get(percent);
-    }
-    const user = percentileArray.filter((value) => {
+    console.log(finalData);
+    const user = finalData.filter((value) => {
       return value.email === email;
     });
     if (!user || user.length == 0) {
