@@ -1262,7 +1262,6 @@ app.get("/reports", async (req, res) => {
       }
       finalData.push(...percentileArray);
     }
-    console.log(finalData);
     const user = finalData.filter((value) => {
       return value.email === email;
     });
