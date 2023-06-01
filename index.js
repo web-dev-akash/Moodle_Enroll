@@ -1193,6 +1193,7 @@ app.get("/reports", async (req, res) => {
       const attempted = rows[i].c[6].v;
       const polled = rows[i].c[7].v;
       const grade = rows[i].c[8].v;
+      const name = `${rows[i].c[0].v} ${rows[i].c[1].v}`;
       const existingUser = aggregatedData.find((user) => user.email === email);
 
       if (existingUser) {
@@ -1206,6 +1207,7 @@ app.get("/reports", async (req, res) => {
           correct: correct,
           attempted: attempted,
           polled: polled,
+          name: name,
         };
         aggregatedData.push(newUser);
       }
@@ -1216,6 +1218,7 @@ app.get("/reports", async (req, res) => {
       const attempted = aggregatedData[i].attempted;
       const polled = aggregatedData[i].polled;
       const grade = aggregatedData[i].grade;
+      const name = aggregatedData[i].name;
       const percent = percentage(correct, polled);
       percentArray.push({
         email,
@@ -1224,6 +1227,7 @@ app.get("/reports", async (req, res) => {
         attempted,
         correct,
         polled,
+        name,
       });
     }
     const sortedPercentArray = percentArray.sort(
@@ -1246,6 +1250,7 @@ app.get("/reports", async (req, res) => {
           correct: data[i].correct,
           polled: data[i].polled,
           sessionid: data[i].sessionid,
+          name: data[i].name,
           percentile: p,
         });
       }
