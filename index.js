@@ -808,22 +808,52 @@ const getZohoToken = async () => {
 
 const updatePointsInZoho = async (refereePhone, referralPhone) => {
   const token = await getZohoToken();
+  console.log(refereePhone, referralPhone);
   const config = {
     headers: {
       Authorization: `Bearer ${token}`,
     },
   };
+
   const lead = await axios.get(
-    `https://www.zohoapis.com/crm/v2/Contacts/search?phone=${referralPhone}`,
+    `https://www.zohoapis.com/crm/v2/Leads/search?phone=${referralPhone}`,
     config
   );
-  const leadId = lead.data.data[0].id;
+  if (!lead.data && lead.data.length == 0) {
+    return "No Lead Found";
+  }
+  const leadid = lead.data.data[0].id;
+  const leadBody = {
+    data: [
+      {
+        id: leadid,
+        Lead_Source: "Referral",
+        $append_values: {
+          Lead_Source: true,
+        },
+      },
+    ],
+    duplicate_check_fields: ["id"],
+    apply_feature_execution: [
+      {
+        name: "layout_rules",
+      },
+    ],
+    trigger: ["workflow"],
+  };
+
+  const updateLead = await axios.post(
+    `https://www.zohoapis.com/crm/v3/Leads/upsert`,
+    leadBody,
+    config
+  );
+
   const contact = await axios.get(
     `https://www.zohoapis.com/crm/v2/Contacts/search?phone=${refereePhone}`,
     config
   );
   const contactId = contact.data.data[0].id;
-  const referralCount = contact.data.data[0].Referral_Count;
+  const referralCount = contact.data.data[0].Referred_Count;
   let newReferralCount = 0;
   if (referralCount == null) {
     newReferralCount = 1;
@@ -852,6 +882,21 @@ const updatePointsInZoho = async (refereePhone, referralPhone) => {
   const updateContact = await axios.post(
     `https://www.zohoapis.com/crm/v3/Contacts/upsert`,
     contactBody,
+    config
+  );
+
+  const body = {
+    tags: [
+      {
+        name: "referee",
+        id: "4878003000001344027",
+        color_code: "#1DB9B4",
+      },
+    ],
+  };
+  const updateTag = await axios.post(
+    `https://www.zohoapis.com/crm/v3/Contacts/${contactId}/actions/add_tags`,
+    body,
     config
   );
 
@@ -1047,125 +1092,66 @@ app.post("/firstLogin", async (req, res) => {
   }
 });
 
-const upadeScoreinZoho = async (phone, addScore) => {
-  if (phone.length <= 10) {
-    phone = `91${phone}`;
-  }
-  const res = await axios.post(
-    `https://accounts.zoho.com/oauth/v2/token?client_id=${CLIENT_ID}&grant_type=refresh_token&client_secret=${CLIENT_SECRET}&refresh_token=${REFRESH_TOKEN}`
-  );
-  const token = res.data.access_token;
-  const config = {
-    headers: {
-      Authorization: `Zoho-oauthtoken ${token}`,
-      "Content-Type": "application/json",
-    },
-  };
-  const contact = await axios.get(
-    `https://www.zohoapis.com/crm/v3/Contacts/search?phone=${phone}`,
-    config
-  );
-  if (!contact.data) {
-    return "Not a Zoho Contact";
-  }
-  const contactid = contact.data.data[0].id;
-  const dealData = await axios.get(
-    `https://www.zohoapis.com/crm/v3/Deals/search?criteria=((Contact_Name:equals:${contactid}))`,
-    config
-  );
-  if (!dealData.data) {
-    return "Not converted to deal";
-  }
-  const dealid = dealData.data.data[0].id;
-  const engagementScore =
-    deal.data.data[0].Engagement_Score != null
-      ? Number(deal.data.data[0].Engagement_Score)
-      : 0;
-  let newEngagementScore = engagementScore + addScore;
-  const dealBody = {
-    data: [
-      {
-        id: dealid,
-        Engagement_Score: newEngagementScore,
-        $append_values: {
-          Engagement_Score: true,
-        },
-      },
-    ],
-    duplicate_check_fields: ["id"],
-    apply_feature_execution: [
-      {
-        name: "layout_rules",
-      },
-    ],
-    trigger: ["workflow"],
-  };
-
-  const updateDeal = await axios.post(
-    `https://www.zohoapis.com/crm/v3/Deals/upsert`,
-    dealBody,
-    config
-  );
-  return updateDeal.data;
-};
-
-const getRegularLogin = async (data) => {
-  const id = data.userid;
-  const loggedinTime = data.timecreated;
-  const res = await axios.get(
-    `${URL}?wstoken=${WSTOKEN}&wsfunction=core_user_get_users_by_field&field=id&values[0]=${id}&moodlewsrestformat=json`
-  );
-  const firstaccess = res.data[0].firstaccess;
-  const phone = res.data[0].phone1;
-  const loggedDate = new Date(loggedinTime * 1000).toLocaleDateString();
-  const firstDate = new Date(
-    (Number(firstaccess) + 86400) * 1000
-  ).toLocaleDateString();
-  const secondDate = new Date(
-    (Number(firstaccess) + 172800) * 1000
-  ).toLocaleDateString();
-  const thirdDate = new Date(
-    (Number(firstaccess) + 259200) * 1000
-  ).toLocaleDateString();
-  const fourthDate = new Date(
-    (Number(firstaccess) + 345600) * 1000
-  ).toLocaleDateString();
-  const fifthDate = new Date(
-    (Number(firstaccess) + 432000) * 1000
-  ).toLocaleDateString();
-  let result = "";
-  if (loggedDate == firstDate) {
-    result = await upadeScoreinZoho(phone, 2);
-  } else if (loggedDate == secondDate) {
-    result = await upadeScoreinZoho(phone, 3);
-  } else if (loggedDate == thirdDate) {
-    result = await upadeScoreinZoho(phone, 5);
-  } else if (loggedDate == fourthDate) {
-    result = await upadeScoreinZoho(phone, 10);
-  } else if (loggedDate == fifthDate) {
-    result = await upadeScoreinZoho(phone, 20);
-  }
-  if (result == "") {
-    return { status: "More than 5 Days" };
-  }
-  return result;
-};
-
-app.post("/regularLogin", async (req, res) => {
-  try {
-    const data = await getRegularLogin(req.body);
-    return res.status(200).send({
-      data,
-    });
-  } catch (error) {
-    return res.status(500).send({
-      error,
-    });
-  }
-});
+// const getRegularLogin = async (data) => {
+//   const id = data.userid;
+//   const loggedinTime = data.timecreated;
+//   const res = await axios.get(
+//     `${URL}?wstoken=${WSTOKEN}&wsfunction=core_user_get_users_by_field&field=id&values[0]=${id}&moodlewsrestformat=json`
+//   );
+//   const firstaccess = res.data[0].firstaccess;
+//   const phone = res.data[0].phone1;
+//   const loggedDate = new Date(loggedinTime * 1000).toLocaleDateString();
+//   const firstDate = new Date(
+//     (Number(firstaccess) + 86400) * 1000
+//   ).toLocaleDateString();
+//   const secondDate = new Date(
+//     (Number(firstaccess) + 172800) * 1000
+//   ).toLocaleDateString();
+//   const thirdDate = new Date(
+//     (Number(firstaccess) + 259200) * 1000
+//   ).toLocaleDateString();
+//   const fourthDate = new Date(
+//     (Number(firstaccess) + 345600) * 1000
+//   ).toLocaleDateString();
+//   const fifthDate = new Date(
+//     (Number(firstaccess) + 432000) * 1000
+//   ).toLocaleDateString();
+//   let result = "";
+//   if (loggedDate == firstDate) {
+//     result = await upadeScoreinZoho(phone, 2);
+//   } else if (loggedDate == secondDate) {
+//     result = await upadeScoreinZoho(phone, 3);
+//   } else if (loggedDate == thirdDate) {
+//     result = await upadeScoreinZoho(phone, 5);
+//   } else if (loggedDate == fourthDate) {
+//     result = await upadeScoreinZoho(phone, 10);
+//   } else if (loggedDate == fifthDate) {
+//     result = await upadeScoreinZoho(phone, 20);
+//   }
+//   if (result == "") {
+//     return { status: "More than 5 Days" };
+//   }
+//   return result;
+// };
 
 const percentage = (partialValue, totalValue) => {
   return Math.round((100 * partialValue) / totalValue);
+};
+
+const getSheetData = async () => {
+  const id = "1J8T_fBa23LwSRoQIv4RAd1_1fhQ0UtQYtC7q6iJHA1A";
+  const gid = "116082223";
+  const url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json&tq&gid=${gid}`;
+  const config = {
+    headers: {
+      "Content-Type": "text/xml",
+    },
+  };
+  const txt = await axios.get(url, config);
+  const txt2 = txt.data;
+  const jsonString = txt2.slice(47, -2);
+  const response = JSON.parse([jsonString]);
+  return response.table.rows;
 };
 
 app.get("/reports", async (req, res) => {
@@ -1173,19 +1159,7 @@ app.get("/reports", async (req, res) => {
     const email = req.query.email;
     const grades = [4, 5, 6, 7];
     const percentArray = [];
-    const id = "1J8T_fBa23LwSRoQIv4RAd1_1fhQ0UtQYtC7q6iJHA1A";
-    const gid = "116082223";
-    const url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json&tq&gid=${gid}`;
-    const config = {
-      headers: {
-        "Content-Type": "text/xml",
-      },
-    };
-    const txt = await axios.get(url, config);
-    const txt2 = txt.data;
-    var jsonString = txt2.slice(47, -2);
-    const response = JSON.parse([jsonString]);
-    const rows = response.table.rows;
+    const rows = await getSheetData();
     const aggregatedData = [];
     for (let i = 0; i < rows.length; i++) {
       const email = rows[i].c[3].v;
@@ -1281,6 +1255,276 @@ app.get("/reports", async (req, res) => {
     }
     return res.status(200).send({
       user,
+    });
+  } catch (error) {
+    return res.status(500).send({
+      error,
+    });
+  }
+});
+
+const updateScoreinZoho = async (email, addScore) => {
+  const res = await axios.post(
+    `https://accounts.zoho.com/oauth/v2/token?client_id=${CLIENT_ID}&grant_type=refresh_token&client_secret=${CLIENT_SECRET}&refresh_token=${REFRESH_TOKEN}`
+  );
+  const token = res.data.access_token;
+  const config = {
+    headers: {
+      Authorization: `Zoho-oauthtoken ${token}`,
+      "Content-Type": "application/json",
+    },
+  };
+
+  const contact = await axios.get(
+    `https://www.zohoapis.com/crm/v3/Contacts/search?email=${email}`,
+    config
+  );
+
+  if (!contact.data) {
+    return "Not a Zoho Contact";
+  }
+  const contactid = contact.data.data[0].id;
+  const dealData = await axios.get(
+    `https://www.zohoapis.com/crm/v3/Deals/search?criteria=((Contact_Name:equals:${contactid}))`,
+    config
+  );
+  if (!dealData.data) {
+    return "Not converted to deal";
+  }
+  const dealid = dealData.data.data[0].id;
+  const engagementScore =
+    dealData.data.data[0].Engagement_Score != null
+      ? Number(dealData.data.data[0].Engagement_Score)
+      : 0;
+  let newEngagementScore = engagementScore + addScore;
+  const dealBody = {
+    data: [
+      {
+        id: dealid,
+        Engagement_Score: newEngagementScore,
+        $append_values: {
+          Engagement_Score: true,
+        },
+      },
+    ],
+    duplicate_check_fields: ["id"],
+    apply_feature_execution: [
+      {
+        name: "layout_rules",
+      },
+    ],
+    trigger: ["workflow"],
+  };
+
+  const updateDeal = await axios.post(
+    `https://www.zohoapis.com/crm/v3/Deals/upsert`,
+    dealBody,
+    config
+  );
+  return updateDeal.data;
+};
+
+const updateStageInZoho = async (email) => {
+  const res = await axios.post(
+    `https://accounts.zoho.com/oauth/v2/token?client_id=${CLIENT_ID}&grant_type=refresh_token&client_secret=${CLIENT_SECRET}&refresh_token=${REFRESH_TOKEN}`
+  );
+  const token = res.data.access_token;
+  const config = {
+    headers: {
+      Authorization: `Zoho-oauthtoken ${token}`,
+      "Content-Type": "application/json",
+    },
+  };
+  const contact = await axios.get(
+    `https://www.zohoapis.com/crm/v3/Contacts/search?email=${email}`,
+    config
+  );
+  if (!contact.data) {
+    return "Not a Zoho Contact";
+  }
+  const contactid = contact.data.data[0].id;
+  const dealData = await axios.get(
+    `https://www.zohoapis.com/crm/v3/Deals/search?criteria=((Contact_Name:equals:${contactid}))`,
+    config
+  );
+  if (!dealData.data) {
+    return "Not converted to deal";
+  }
+  const dealid = dealData.data.data[0].id;
+  const body = {
+    data: [
+      {
+        id: dealid,
+        Stage: "Attendee",
+        $append_values: {
+          Stage: true,
+        },
+      },
+    ],
+    duplicate_check_fields: ["id"],
+    apply_feature_execution: [
+      {
+        name: "layout_rules",
+      },
+    ],
+    trigger: ["workflow"],
+  };
+  const deal = await axios.post(
+    `https://www.zohoapis.com/crm/v3/Deals/upsert`,
+    body,
+    config
+  );
+  return deal.data;
+};
+
+// app.get("/test", async (req, res) => {
+//   const data = await updateStageInZoho("rajtosh@gmail.com");
+//   res.send({
+//     data,
+//   });
+// });
+
+const checkRegularAttendeeTag = async (email) => {
+  const res = await axios.post(
+    `https://accounts.zoho.com/oauth/v2/token?client_id=${CLIENT_ID}&grant_type=refresh_token&client_secret=${CLIENT_SECRET}&refresh_token=${REFRESH_TOKEN}`
+  );
+  const token = res.data.access_token;
+  const config = {
+    headers: {
+      Authorization: `Zoho-oauthtoken ${token}`,
+      "Content-Type": "application/json",
+    },
+  };
+  const contact = await axios.get(
+    `https://www.zohoapis.com/crm/v3/Contacts/search?email=${email}`,
+    config
+  );
+  if (!contact.data) {
+    return "Not a Zoho Contact";
+  }
+  const contactid = contact.data.data[0].id;
+  const dealData = await axios.get(
+    `https://www.zohoapis.com/crm/v3/Deals/search?criteria=((Contact_Name:equals:${contactid}))`,
+    config
+  );
+  if (!dealData.data) {
+    return "Not converted to deal";
+  }
+  const dealid = dealData.data.data[0].id;
+  const body = {
+    tags: [
+      {
+        name: "regularattendance",
+        id: "4878003000000773058",
+        color_code: "#FEDA62",
+      },
+    ],
+  };
+  const updateTag = await axios.post(
+    `https://www.zohoapis.com/crm/v3/Deals/${dealid}/actions/add_tags`,
+    body,
+    config
+  );
+  return updateTag.data;
+};
+
+const getRegularLogin = async () => {
+  const aggregatedData = [];
+  const users = [];
+  const rows = await getSheetData();
+  for (let i = 0; i < rows.length; i++) {
+    const email = rows[i].c[3].v;
+    const currentDate = new Date().toLocaleDateString();
+    const date = new Date(rows[i].c[4].f).toLocaleDateString();
+    const sessionid = rows[i].c[5].v;
+    const existingUser = aggregatedData.find((user) => user.email === email);
+    if (existingUser) {
+      existingUser.sessions.push({
+        sessionid,
+      });
+      date == currentDate &&
+        existingUser.currentDate.push({
+          date: currentDate,
+        });
+      date < currentDate &&
+        existingUser.prevDate.push({
+          date: date,
+        });
+    } else {
+      const newUser = {
+        email: email,
+        currentDate: [
+          {
+            date: currentDate,
+          },
+        ],
+        prevDate: [
+          {
+            date: date,
+          },
+        ],
+        sessions: [
+          {
+            sessionid,
+          },
+        ],
+      };
+      aggregatedData.push(newUser);
+    }
+  }
+  const score = [2, 3, 5, 10, 20];
+
+  aggregatedData.map(async (user, index) => {
+    let obj;
+    if (user.prevDate.length >= 5) {
+      obj = await checkRegularAttendeeTag(user.email);
+    } else if (
+      user.prevDate.length == 1 &&
+      user.prevDate[0].date == user.currentDate[0].date
+    ) {
+      await updateStageInZoho(user.email);
+      if (
+        user.currentDate &&
+        user.currentDate.length > 0 &&
+        user.currentDate.length < 5
+      ) {
+        for (let i = 0; i < user.currentDate.length; i++) {
+          obj = await updateScoreinZoho(user.email, score[i]);
+        }
+      } else if (
+        user.currentDate &&
+        user.currentDate.length > 0 &&
+        user.currentDate.length >= 5
+      ) {
+        for (let i = 0; i < 5; i++) {
+          obj = await updateScoreinZoho(user.email, score[i]);
+        }
+      }
+    } else if (user.prevDate.length < 5) {
+      const sessionLeft = 5 - user.prevDate.length;
+      const currentSession = user.sessions.length - user.prevDate.length;
+      if (currentSession >= sessionLeft) {
+        for (let i = 0; i < sessionLeft; i++) {
+          let length = user.prevDate.length + i;
+          obj = await updateScoreinZoho(user.email, score[length]);
+        }
+      } else {
+        for (let i = 0; i < currentSession; i++) {
+          let length = user.prevDate.length + i;
+          obj = await updateScoreinZoho(user.email, score[length]);
+        }
+      }
+    }
+    users.push(obj);
+  });
+  return users;
+};
+
+app.get("/regularLogin", async (req, res) => {
+  try {
+    const data = await getRegularLogin();
+    return res.status(200).send({
+      data,
     });
   } catch (error) {
     return res.status(500).send({
