@@ -561,6 +561,7 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
           });
         }
       } else if (subscription == "Trail") {
+        console.log({ email: userExist[0].email, status: "trialinprogress" });
         return res.status(200).send({
           user: [
             {
