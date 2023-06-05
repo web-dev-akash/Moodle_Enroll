@@ -475,6 +475,7 @@ app.get("/moodle", async (req, res) => {
 app.post("/createTrailUser", authMiddleware, async (req, res) => {
   try {
     let { email, phone, student_name, student_grade } = req.body;
+    console.log("Started the flow");
     if (phone.length > 10) {
       phone = phone.substring(phone.length - 10, phone.length);
     }
@@ -545,6 +546,7 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
               userId,
             });
           }
+          console.log("trail activated");
           return res.status(200).send({
             user: [
               {
