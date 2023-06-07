@@ -1070,17 +1070,20 @@ const getSheetData = async () => {
 };
 
 const updateReportLogsinGoogleSheet = async (user) => {
+  console.log("sheet 1");
   const spreadsheetId = process.env.SPREADSHEET_ID;
   const auth = new google.auth.GoogleAuth({
     keyFile: "key.json", //the key file
     scopes: "https://www.googleapis.com/auth/spreadsheets",
   });
+  console.log("sheet 2");
 
   const authClientObject = await auth.getClient();
   const sheet = google.sheets({
     version: "v4",
     auth: authClientObject,
   });
+  console.log("sheet 3");
 
   const writeData = await sheet.spreadsheets.values.append({
     auth, //auth object
@@ -1101,6 +1104,8 @@ const updateReportLogsinGoogleSheet = async (user) => {
       ],
     },
   });
+  console.log("sheet 4");
+
   return writeData.data;
 };
 
