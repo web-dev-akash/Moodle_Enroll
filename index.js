@@ -1107,7 +1107,7 @@ const updateReportLogsinGoogleSheet = async (user) => {
 const updateTagBasedOnSessionAttepted = async (email) => {
   const spreadsheetId = process.env.SPREADSHEET_ID;
   const auth = new google.auth.GoogleAuth({
-    keyFile: "sheet.json", //the key file
+    keyFile: "./sheet.json", //the key file
     scopes: "https://www.googleapis.com/auth/spreadsheets",
   });
 
