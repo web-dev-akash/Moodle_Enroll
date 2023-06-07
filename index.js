@@ -1070,20 +1070,20 @@ const getSheetData = async () => {
 };
 
 const updateReportLogsinGoogleSheet = async (user) => {
-  console.log("sheet 1");
+  // console.log("sheet 1");
   const spreadsheetId = process.env.SPREADSHEET_ID;
   const auth = new google.auth.GoogleAuth({
     keyFile: "key.json", //the key file
     scopes: "https://www.googleapis.com/auth/spreadsheets",
   });
-  console.log("sheet 2");
+  // console.log("sheet 2");
 
   const authClientObject = await auth.getClient();
   const sheet = google.sheets({
     version: "v4",
     auth: authClientObject,
   });
-  console.log("sheet 3");
+  // console.log("sheet 3");
 
   const writeData = sheet.spreadsheets.values.append({
     auth, //auth object
@@ -1105,7 +1105,7 @@ const updateReportLogsinGoogleSheet = async (user) => {
     },
   });
 
-  console.log("sheet 4");
+  // console.log("sheet 4");
   console.log(writeData.data);
   return writeData.data;
 };
@@ -1214,9 +1214,9 @@ const updateTagBasedOnSessionAttepted = async (email) => {
 app.get("/reports", async (req, res) => {
   try {
     const email = req.query.email;
-    console.log("first");
-    // await updateTagBasedOnSessionAttepted(email);
-    console.log("second");
+    // console.log("first");
+    await updateTagBasedOnSessionAttepted(email);
+    // console.log("second");
     const grades = [4, 5, 6, 7];
     const percentArray = [];
     const rows = await getSheetData();
@@ -1249,7 +1249,7 @@ app.get("/reports", async (req, res) => {
         aggregatedData.push(newUser);
       }
     }
-    console.log("third");
+    // console.log("third");
     for (let i = 0; i < aggregatedData.length; i++) {
       const email = aggregatedData[i].email;
       const correct = aggregatedData[i].correct;
@@ -1305,7 +1305,7 @@ app.get("/reports", async (req, res) => {
       }
       finalData.push(...percentileArray);
     }
-    console.log("four");
+    // console.log("four");
     const user = finalData.filter((value) => {
       return value.email === email;
     });
@@ -1316,7 +1316,7 @@ app.get("/reports", async (req, res) => {
       });
     }
     await updateReportLogsinGoogleSheet(user);
-    console.log("five");
+    // console.log("five");
     return res.status(200).send({
       user,
     });
