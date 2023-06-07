@@ -1085,7 +1085,7 @@ const updateReportLogsinGoogleSheet = async (user) => {
   });
   console.log("sheet 3");
 
-  const writeData = await sheet.spreadsheets.values.append({
+  const writeData = sheet.spreadsheets.values.append({
     auth, //auth object
     spreadsheetId, //spreadsheet id
     range: "Report Logs!A:V", //sheet name and range of cells
@@ -1104,8 +1104,9 @@ const updateReportLogsinGoogleSheet = async (user) => {
       ],
     },
   });
-  console.log("sheet 4");
 
+  console.log("sheet 4");
+  console.log(writeData.data);
   return writeData.data;
 };
 
