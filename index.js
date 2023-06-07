@@ -1211,8 +1211,10 @@ app.get("/reports", async (req, res) => {
   try {
     const email = req.query.email;
 
+    console.log("first");
     await updateTagBasedOnSessionAttepted(email);
 
+    console.log("second");
     const grades = [4, 5, 6, 7];
     const percentArray = [];
     const rows = await getSheetData();
@@ -1245,6 +1247,7 @@ app.get("/reports", async (req, res) => {
         aggregatedData.push(newUser);
       }
     }
+    console.log("third");
     for (let i = 0; i < aggregatedData.length; i++) {
       const email = aggregatedData[i].email;
       const correct = aggregatedData[i].correct;
@@ -1300,6 +1303,7 @@ app.get("/reports", async (req, res) => {
       }
       finalData.push(...percentileArray);
     }
+    console.log("four");
     const user = finalData.filter((value) => {
       return value.email === email;
     });
@@ -1310,6 +1314,7 @@ app.get("/reports", async (req, res) => {
       });
     }
     await updateReportLogsinGoogleSheet(user);
+    console.log("five");
     return res.status(200).send({
       user,
     });
