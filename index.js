@@ -1123,8 +1123,6 @@ const updateTagBasedOnSessionAttepted = async (email) => {
     range: "Report Logs!A:B", //range of cells to read from.
   });
 
-  const data = readData.data.values;
-
   const zohoToken = await getZohoToken();
   const zohoConfig = {
     headers: {
@@ -1150,7 +1148,7 @@ const updateTagBasedOnSessionAttepted = async (email) => {
   const dealId = deal.data.data[0].id;
 
   let flag = false;
-
+  const data = readData.data.values;
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] == email) {
       const date = data[i][1];
@@ -1210,10 +1208,8 @@ const updateTagBasedOnSessionAttepted = async (email) => {
 app.get("/reports", async (req, res) => {
   try {
     const email = req.query.email;
-
     console.log("first");
-    await updateTagBasedOnSessionAttepted(email);
-
+    // await updateTagBasedOnSessionAttepted(email);
     console.log("second");
     const grades = [4, 5, 6, 7];
     const percentArray = [];
