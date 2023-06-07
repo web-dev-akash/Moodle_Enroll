@@ -180,7 +180,7 @@ const updateScheduleLogsinGoogleSheet = async (phone) => {
     phone.length > 10 ? Number(phone.substring(2, phone.length)) : phone;
   const spreadsheetId = process.env.SPREADSHEET_ID;
   const auth = new google.auth.GoogleAuth({
-    keyFile: "sheet.json", //the key file
+    keyFile: "key.json", //the key file
     scopes: "https://www.googleapis.com/auth/spreadsheets",
   });
 
@@ -1072,7 +1072,7 @@ const getSheetData = async () => {
 const updateReportLogsinGoogleSheet = async (user) => {
   const spreadsheetId = process.env.SPREADSHEET_ID;
   const auth = new google.auth.GoogleAuth({
-    keyFile: "sheet.json", //the key file
+    keyFile: "key.json", //the key file
     scopes: "https://www.googleapis.com/auth/spreadsheets",
   });
 
