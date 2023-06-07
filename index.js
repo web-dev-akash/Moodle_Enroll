@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const axios = require("axios");
+const { google } = require("googleapis");
 require("dotenv").config();
 const app = express();
 app.use(express.json());
@@ -174,9 +175,105 @@ app.get("/", (req, res) => {
   });
 });
 
+const updateScheduleLogsinGoogleSheet = async (phone) => {
+  const newPhone =
+    phone.length > 10 ? Number(phone.substring(2, phone.length)) : phone;
+  const spreadsheetId = process.env.SPREADSHEET_ID;
+  const auth = new google.auth.GoogleAuth({
+    keyFile: "sheet.json", //the key file
+    scopes: "https://www.googleapis.com/auth/spreadsheets",
+  });
+
+  const authClientObject = await auth.getClient();
+  const sheet = google.sheets({
+    version: "v4",
+    auth: authClientObject,
+  });
+
+  const writeData = await sheet.spreadsheets.values.append({
+    auth, //auth object
+    spreadsheetId, //spreadsheet id
+    range: "Schedule Logs!A:B", //sheet name and range of cells
+    valueInputOption: "USER_ENTERED", // The information will be passed according to what the usere passes in as date, number or text
+    resource: {
+      values: [[newPhone, new Date().toLocaleDateString()]],
+    },
+  });
+
+  return writeData.data;
+};
+
+const getZohoToken = async () => {
+  try {
+    const res = await axios.post(
+      `https://accounts.zoho.com/oauth/v2/token?client_id=${CLIENT_ID}&grant_type=refresh_token&client_secret=${CLIENT_SECRET}&refresh_token=${REFRESH_TOKEN}`
+    );
+    const token = res.data.access_token;
+    return token;
+  } catch (error) {
+    res.send({
+      error,
+    });
+  }
+};
+
 app.get("/getWeeklySchedule", async (req, res) => {
   try {
     const phone = req.query.phone;
+    const zohoToken = await getZohoToken();
+    const zohoConfig = {
+      headers: {
+        Authorization: `Bearer ${zohoToken}`,
+      },
+    };
+
+    await updateScheduleLogsinGoogleSheet(phone);
+
+    const contact = await axios.get(
+      `https://www.zohoapis.com/crm/v2/Contacts/search?phone=${phone}`,
+      zohoConfig
+    );
+    if (!contact.data) {
+      return "Not a Contact in Zoho";
+    }
+    const contactId = contact.data.data[0].id;
+    const body = {
+      tags: [
+        {
+          name: "sawlivequizschedule",
+          id: "4878003000001391013",
+          color_code: "#969696",
+        },
+      ],
+    };
+    await axios.post(
+      `https://www.zohoapis.com/crm/v3/Contacts/${contactId}/actions/add_tags`,
+      body,
+      zohoConfig
+    );
+
+    const deal = await axios.get(
+      `https://www.zohoapis.com/crm/v2/Deals/search?criteria=Contact_Name:equals:${contactId}`,
+      zohoConfig
+    );
+
+    if (deal.data && deal.data.length > 0) {
+      const body = {
+        tags: [
+          {
+            name: "sawlivequizschedule",
+            id: "4878003000001388010",
+            color_code: "#D297EE",
+          },
+        ],
+      };
+      await axios.post(
+        `https://www.zohoapis.com/crm/v3/Deals/${deal.data.data[0].id}/actions/add_tags`,
+        body,
+        zohoConfig
+      );
+    }
+
     const finalWeeklyData = [];
     const getConfig = {
       headers: {
@@ -396,6 +493,7 @@ app.get("/getWeeklySchedule", async (req, res) => {
     }
     return res.status(200).send({
       status: "success",
+      totalData: weeklyData,
       data: finalWeeklyData,
     });
   } catch (error) {
@@ -795,20 +893,6 @@ app.post("/refer", async (req, res) => {
   }
 });
 
-const getZohoToken = async () => {
-  try {
-    const res = await axios.post(
-      `https://accounts.zoho.com/oauth/v2/token?client_id=${CLIENT_ID}&grant_type=refresh_token&client_secret=${CLIENT_SECRET}&refresh_token=${REFRESH_TOKEN}`
-    );
-    const token = res.data.access_token;
-    return token;
-  } catch (error) {
-    res.send({
-      error,
-    });
-  }
-};
-
 const updatePointsInZoho = async (refereePhone, referralPhone) => {
   const token = await getZohoToken();
   console.log(refereePhone, referralPhone);
@@ -1157,9 +1241,150 @@ const getSheetData = async () => {
   return response.table.rows;
 };
 
+const updateReportLogsinGoogleSheet = async (user) => {
+  const spreadsheetId = process.env.SPREADSHEET_ID;
+  const auth = new google.auth.GoogleAuth({
+    keyFile: "sheet.json", //the key file
+    scopes: "https://www.googleapis.com/auth/spreadsheets",
+  });
+
+  const authClientObject = await auth.getClient();
+  const sheet = google.sheets({
+    version: "v4",
+    auth: authClientObject,
+  });
+
+  const writeData = await sheet.spreadsheets.values.append({
+    auth, //auth object
+    spreadsheetId, //spreadsheet id
+    range: "Report Logs!A:V", //sheet name and range of cells
+    valueInputOption: "USER_ENTERED", // The information will be passed according to what the usere passes in as date, number or text
+    resource: {
+      values: [
+        [
+          user[0].email,
+          new Date().toLocaleDateString(),
+          new Date().toLocaleTimeString(),
+          user[0].polled,
+          user[0].correct,
+          user[0].percent,
+          user[0].percentile,
+        ],
+      ],
+    },
+  });
+  return writeData.data;
+};
+
+const updateTagBasedOnSessionAttepted = async (email) => {
+  const spreadsheetId = process.env.SPREADSHEET_ID;
+  const auth = new google.auth.GoogleAuth({
+    keyFile: "sheet.json", //the key file
+    scopes: "https://www.googleapis.com/auth/spreadsheets",
+  });
+
+  const authClientObject = await auth.getClient();
+  const sheet = google.sheets({
+    version: "v4",
+    auth: authClientObject,
+  });
+
+  const readData = await sheet.spreadsheets.values.get({
+    auth, //auth object
+    spreadsheetId, // spreadsheet id
+    range: "Report Logs!A:B", //range of cells to read from.
+  });
+
+  const data = readData.data.values;
+
+  const zohoToken = await getZohoToken();
+  const zohoConfig = {
+    headers: {
+      Authorization: `Bearer ${zohoToken}`,
+    },
+  };
+
+  const contact = await axios.get(
+    `https://www.zohoapis.com/crm/v2/Contacts/search?email=${email}`,
+    zohoConfig
+  );
+  if (!contact.data) {
+    return "Not a Contact in Zoho";
+  }
+  const contactId = contact.data.data[0].id;
+  const deal = await axios.get(
+    `https://www.zohoapis.com/crm/v2/Deals/search?criteria=Contact_Name:equals:${contactId}`,
+    zohoConfig
+  );
+  if (!deal.data) {
+    return "Not a Deal in Zoho";
+  }
+  const dealId = deal.data.data[0].id;
+
+  let flag = false;
+
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] == email) {
+      const date = data[i][1];
+      if (date !== new Date().toLocaleDateString()) {
+        flag = true;
+        break;
+      }
+    }
+  }
+  if (flag) {
+    const removeBody = {
+      tags: [
+        {
+          name: "viewedreportonce",
+        },
+      ],
+    };
+    await axios.post(
+      `https://www.zohoapis.com/crm/v3/Deals/${dealId}/actions/remove_tags`,
+      removeBody,
+      zohoConfig
+    );
+
+    const body = {
+      tags: [
+        {
+          name: "viewedreportmorethanonce",
+          id: "4878003000001336301",
+          color_code: "#57B1FD",
+        },
+      ],
+    };
+    await axios.post(
+      `https://www.zohoapis.com/crm/v3/Deals/${dealId}/actions/add_tags`,
+      body,
+      zohoConfig
+    );
+  } else {
+    const body = {
+      tags: [
+        {
+          name: "viewedreportonce",
+          id: "4878003000001336294",
+          color_code: "#879BFC",
+        },
+      ],
+    };
+    await axios.post(
+      `https://www.zohoapis.com/crm/v3/Deals/${dealId}/actions/add_tags`,
+      body,
+      zohoConfig
+    );
+  }
+  return readData.data;
+};
+
 app.get("/reports", async (req, res) => {
   try {
     const email = req.query.email;
+
+    await updateTagBasedOnSessionAttepted(email);
+
     const grades = [4, 5, 6, 7];
     const percentArray = [];
     const rows = await getSheetData();
@@ -1256,6 +1481,7 @@ app.get("/reports", async (req, res) => {
         message: "User not found",
       });
     }
+    await updateReportLogsinGoogleSheet(user);
     return res.status(200).send({
       user,
     });
