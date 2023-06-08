@@ -314,13 +314,13 @@ app.get("/getWeeklySchedule", async (req, res) => {
       }
       let grade = getGrade(i);
       const courseData = await getCourseContent(cid);
-      // console.log(courseData);
       courseData.forEach((res) => {
         const data = res.modules;
-        if (data.length > 1) {
+        if (data.length > 0) {
           data.forEach((module) => {
+            // console.log("module", module.instance);
             weeklyData.forEach((week) => {
-              // console.log(week);
+              // console.log("week", week.instance);
               if (week.instance === module.instance) {
                 let time = week.timestart - 2400;
                 finalWeeklyData.push({
