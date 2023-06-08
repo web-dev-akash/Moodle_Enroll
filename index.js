@@ -111,8 +111,8 @@ const getPaidTime = () => {
   };
 };
 
-const getWeeklySchedule = async () => {
-  let eventsOfTheWeek = [];
+const getWeeklySchedule = async (url, wstoken) => {
+  const { startTime, endTime } = getTrailTime();
   const res = await axios.get(
     `${url}?wstoken=${wstoken}&wsfunction=core_course_get_courses_by_field&[options][ids]&moodlewsrestformat=json`
   );
@@ -120,18 +120,15 @@ const getWeeklySchedule = async () => {
   const filteredData = data.filter((response) => {
     return response.shortname.includes("Workshop");
   });
-  const { startTime, endTime } = getTrailTime();
-  for (let i = 0; i < filteredData.length; i++) {
-    const courseID = filteredData[i].id;
+  const eventPromises = filteredData.map(async (course) => {
+    const courseID = course.id;
     const event = await axios.get(
       `${url}?wstoken=${wstoken}&&wsfunction=core_calendar_get_calendar_events&events[courseids][0]=${courseID}&options[timestart]=${startTime}&options[timeend]=${endTime}&moodlewsrestformat=json`
     );
-    let object = event.data;
-    if (object.events.length > 0) {
-      eventsOfTheWeek.push(object);
-    }
-  }
-  return eventsOfTheWeek;
+    return event.data.events;
+  });
+  const eventsOfTheWeek = await Promise.all(eventPromises);
+  return eventsOfTheWeek.flat();
 };
 
 const getExistingUser = async (username) => {
@@ -163,7 +160,7 @@ const enrolUserToCourse = async ({ courseId, timeStart, timeEnd, userId }) => {
 };
 
 const getCourseContent = async (courseId) => {
-  const res = await axios.post(
+  const res = await axios.get(
     `${url}?wstoken=${wstoken}&wsfunction=${wsfunctionGetContent}&courseid=${courseId}&moodlewsrestformat=json`
   );
   return res.data;
@@ -217,9 +214,64 @@ const getZohoToken = async () => {
   }
 };
 
-app.post("/getWeeklySchedule", async (req, res) => {
+const searchContactInZoho = async (phone, zohoConfig) => {
+  const contact = await axios.get(
+    `https://www.zohoapis.com/crm/v2/Contacts/search?phone=${phone}`,
+    zohoConfig
+  );
+  return contact.data;
+};
+
+const addTagsToContact = async (contactId, zohoConfig) => {
+  const body = {
+    tags: [
+      {
+        name: "sawlivequizschedule",
+        id: "4878003000001391013",
+        color_code: "#969696",
+      },
+    ],
+  };
+  await axios.post(
+    `https://www.zohoapis.com/crm/v3/Contacts/${contactId}/actions/add_tags`,
+    body,
+    zohoConfig
+  );
+};
+
+const searchDealByContact = async (contactId, zohoConfig) => {
+  const deal = await axios.get(
+    `https://www.zohoapis.com/crm/v2/Deals/search?criteria=Contact_Name:equals:${contactId}`,
+    zohoConfig
+  );
+  return deal.data;
+};
+
+const addTagsToDeal = async (dealId, zohoConfig) => {
+  const body = {
+    tags: [
+      {
+        name: "sawlivequizschedule",
+        id: "4878003000001388010",
+        color_code: "#D297EE",
+      },
+    ],
+  };
+  await axios.post(
+    `https://www.zohoapis.com/crm/v3/Deals/${dealId}/actions/add_tags`,
+    body,
+    zohoConfig
+  );
+};
+
+const getGrade = (index) => {
+  const grades = ["4", "5", "6"];
+  const gradeIndex = index % grades.length;
+  return grades[gradeIndex];
+};
+
+app.get("/getWeeklySchedule", async (req, res) => {
   try {
-    const { grade } = req.body;
     const phone = req.query.phone;
     if (phone) {
       const zohoToken = await getZohoToken();
@@ -231,95 +283,59 @@ app.post("/getWeeklySchedule", async (req, res) => {
 
       await updateScheduleLogsinGoogleSheet(phone);
 
-      const contact = await axios.get(
-        `https://www.zohoapis.com/crm/v2/Contacts/search?phone=${phone}`,
-        zohoConfig
-      );
+      const contact = await searchContactInZoho(phone, zohoConfig);
       if (!contact.data) {
-        return "Not a Contact in Zoho";
+        return res.status(200).send("Not a Contact in Zoho");
       }
-      const contactId = contact.data.data[0].id;
-      const body = {
-        tags: [
-          {
-            name: "sawlivequizschedule",
-            id: "4878003000001391013",
-            color_code: "#969696",
-          },
-        ],
-      };
-      await axios.post(
-        `https://www.zohoapis.com/crm/v3/Contacts/${contactId}/actions/add_tags`,
-        body,
-        zohoConfig
-      );
+      const contactId = contact.data[0].id;
+      await addTagsToContact(contactId, zohoConfig);
 
-      const deal = await axios.get(
-        `https://www.zohoapis.com/crm/v2/Deals/search?criteria=Contact_Name:equals:${contactId}`,
-        zohoConfig
-      );
-
+      const deal = await searchDealByContact(contactId, zohoConfig);
       if (deal.data && deal.data.length > 0) {
-        const body = {
-          tags: [
-            {
-              name: "sawlivequizschedule",
-              id: "4878003000001388010",
-              color_code: "#D297EE",
-            },
-          ],
-        };
-        await axios.post(
-          `https://www.zohoapis.com/crm/v3/Deals/${deal.data.data[0].id}/actions/add_tags`,
-          body,
-          zohoConfig
-        );
+        const dealId = deal.data[0].id;
+        await addTagsToDeal(dealId, zohoConfig);
       }
     }
+
     const finalWeeklyData = [];
-    const weeklyData = await getWeeklySchedule();
-    let finalCourseData = [];
-    try {
-      for (x = 0; x < 4; x++) {
-        const cid = courseFormat[x][grade];
-        let subject = "";
-        if (x == 0) {
-          subject = "Math";
-        } else if (x == 1) {
-          subject = "English";
-        } else if (x == 2) {
-          subject = "Science";
-        } else if (x == 3) {
-          subject = "GK";
-        }
-        const courseData = await getCourseContent(cid);
-        finalCourseData.push(...courseData);
-        courseData.map((res) => {
-          const data = res.modules;
-          if (data.length > 1) {
-            for (let i = 0; i < data.length; i++) {
-              for (let j = 0; j < weeklyData.length; j++) {
-                let events = weeklyData[j].events;
-                for (let k = 0; k < events.length; k++) {
-                  if (weeklyData[j].events[k].instance == data[i].instance) {
-                    let time = weeklyData[j].events[k].timestart - 2400;
-                    finalWeeklyData.push({
-                      subject,
-                      name: res.name,
-                      timestamp: time,
-                    });
-                  }
-                }
-              }
-            }
-          }
-        });
+    const weeklyData = await getWeeklySchedule(url, wstoken);
+
+    for (i = 0; i < allLiveQuizCourses.length; i++) {
+      let cid = allLiveQuizCourses[i];
+      let subject = "";
+      if (i <= 2) {
+        subject = "Math";
+      } else if (i > 2 && i <= 5) {
+        subject = "English";
+      } else if (i > 5 && i <= 8) {
+        subject = "Science";
+      } else if (i > 8 && i <= 11) {
+        subject = "GK";
       }
-    } catch (error) {
-      return res.status(500).send({
-        error,
+      let grade = getGrade(i);
+      const courseData = await getCourseContent(cid);
+      // console.log(courseData);
+      courseData.forEach((res) => {
+        const data = res.modules;
+        if (data.length > 1) {
+          data.forEach((module) => {
+            weeklyData.forEach((week) => {
+              // console.log(week);
+              if (week.instance === module.instance) {
+                let time = week.timestart - 2400;
+                finalWeeklyData.push({
+                  subject,
+                  name: res.name,
+                  timestamp: time,
+                  grade,
+                });
+              }
+            });
+          });
+        }
       });
     }
+
     return res.status(200).send({
       status: "success",
       data: finalWeeklyData,
