@@ -396,10 +396,10 @@ const changeSubscriptionType = async () => {
   }
 };
 
-cron.schedule("59 23 * * *", async () => {
-  const data = await changeSubscriptionType();
-  console.log(data);
-});
+// cron.schedule("59 23 * * *", async () => {
+//   const data = await changeSubscriptionType();
+//   console.log(data);
+// });
 
 app.get("/moodle", async (req, res) => {
   try {
@@ -1608,6 +1608,88 @@ app.get("/regularLogin", async (req, res) => {
     });
   } catch (error) {
     return res.status(500).send({
+      error,
+    });
+  }
+});
+
+const getScheduleFromSheet = async () => {
+  const { startTime, endTime } = getTrailTime();
+  const finalWeeklyData = [];
+  const spreadsheetId = process.env.SCHEDULE_SPREADSHEET_ID;
+  const auth = new google.auth.GoogleAuth({
+    keyFile: "key.json", //the key file
+    scopes: "https://www.googleapis.com/auth/spreadsheets",
+  });
+
+  const authClientObject = await auth.getClient();
+  const sheet = google.sheets({
+    version: "v4",
+    auth: authClientObject,
+  });
+
+  const readData = await sheet.spreadsheets.values.get({
+    auth, //auth object
+    spreadsheetId, // spreadsheet id
+    range: "Schedule!A:H", //range of cells to read from.
+  });
+  const data = readData.data.values;
+  for (let i = 1; i < data.length; i++) {
+    const day = data[i][2];
+    const date = data[i][3].split("/");
+    const time = data[i][4];
+    const grade = data[i][5];
+    const subject = data[i][6];
+    const topic = data[i][7];
+
+    const newDate = new Date(date[2], Number(date[1]) - 1, date[0]);
+    const timestamp = Math.floor(newDate.getTime() / 1000);
+    if (timestamp >= startTime && timestamp <= endTime) {
+      const obj = {
+        day,
+        time,
+        grade,
+        subject,
+        topic,
+      };
+      finalWeeklyData.push(obj);
+    }
+  }
+  return finalWeeklyData;
+};
+
+app.get("/weeklySchedule", async (req, res) => {
+  try {
+    const phone = req.query.phone;
+    if (phone) {
+      const zohoToken = await getZohoToken();
+      const zohoConfig = {
+        headers: {
+          Authorization: `Bearer ${zohoToken}`,
+        },
+      };
+
+      await updateScheduleLogsinGoogleSheet(phone);
+
+      const contact = await searchContactInZoho(phone, zohoConfig);
+      if (!contact.data) {
+        return res.status(200).send("Not a Contact in Zoho");
+      }
+      const contactId = contact.data[0].id;
+      await addTagsToContact(contactId, zohoConfig);
+
+      const deal = await searchDealByContact(contactId, zohoConfig);
+      if (deal.data && deal.data.length > 0) {
+        const dealId = deal.data[0].id;
+        await addTagsToDeal(dealId, zohoConfig);
+      }
+    }
+    const data = await getScheduleFromSheet();
+    res.send({
+      data,
+    });
+  } catch (error) {
+    res.status(500).send({
       error,
     });
   }
