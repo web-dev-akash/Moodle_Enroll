@@ -1651,6 +1651,7 @@ const getScheduleFromSheet = async () => {
         grade,
         subject,
         topic,
+        timestamp,
       };
       finalWeeklyData.push(obj);
     }
@@ -1685,6 +1686,62 @@ app.get("/weeklySchedule", async (req, res) => {
       }
     }
     const data = await getScheduleFromSheet();
+    res.send({
+      data,
+    });
+  } catch (error) {
+    res.status(500).send({
+      error,
+    });
+  }
+});
+
+const getPreviousReportData = async (email) => {
+  const userData = [];
+  const spreadsheetId = process.env.SPREADSHEET_ID;
+  const auth = new google.auth.GoogleAuth({
+    keyFile: "key.json", //the key file
+    scopes: "https://www.googleapis.com/auth/spreadsheets",
+  });
+
+  const authClientObject = await auth.getClient();
+  const sheet = google.sheets({
+    version: "v4",
+    auth: authClientObject,
+  });
+
+  const readData = await sheet.spreadsheets.values.get({
+    auth, //auth object
+    spreadsheetId, // spreadsheet id
+    range: "Report Logs!A:G", //range of cells to read from.
+  });
+  const data = readData.data.values;
+  // return data;
+  for (let i = 1; i < data.length; i++) {
+    const userEmail = data[i][0];
+    const date = data[i][1];
+    const totalPolled = data[i][3];
+    const totalCorrect = data[i][4];
+    const totalPercent = data[i][5];
+    const totalPercentile = data[i][6];
+    if (data[i][0] === email) {
+      userData.push({
+        email: userEmail,
+        date,
+        totalPolled,
+        totalCorrect,
+        totalPercent,
+        totalPercentile,
+      });
+    }
+  }
+  return userData;
+};
+
+app.get("/previousReport", async (req, res) => {
+  try {
+    const email = req.query.email;
+    const data = await getPreviousReportData(email);
     res.send({
       data,
     });
