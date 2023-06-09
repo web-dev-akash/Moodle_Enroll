@@ -1087,6 +1087,7 @@ const getSheetData = async () => {
 
 const updateReportLogsinGoogleSheet = async (user) => {
   // console.log("sheet 1");
+  const date = new Date().getDate();
   const spreadsheetId = process.env.SPREADSHEET_ID;
   const auth = new google.auth.GoogleAuth({
     keyFile: "key.json", //the key file
@@ -1110,8 +1111,8 @@ const updateReportLogsinGoogleSheet = async (user) => {
       values: [
         [
           user[0].email,
-          new Date().toLocaleDateString(),
-          new Date().toLocaleTimeString(),
+          new Date().toDateString(),
+          new Date().toTimeString(),
           user[0].polled,
           user[0].correct,
           user[0].percent,
