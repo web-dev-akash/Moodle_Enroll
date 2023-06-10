@@ -1231,9 +1231,7 @@ const updateTagBasedOnSessionAttepted = async (email) => {
 app.get("/reports", async (req, res) => {
   try {
     const email = req.query.email;
-    // console.log("first");
     await updateTagBasedOnSessionAttepted(email);
-    // console.log("second");
     const grades = [4, 5, 6, 7];
     const percentArray = [];
     const rows = await getSheetData();
@@ -1307,6 +1305,7 @@ app.get("/reports", async (req, res) => {
           sessionid: data[i].sessionid,
           name: data[i].name,
           percentile: p,
+          rank: data.length - i,
         });
       }
       const percentMap = new Map();
