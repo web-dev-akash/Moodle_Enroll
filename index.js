@@ -1761,7 +1761,8 @@ app.get("/previousReport", async (req, res) => {
 app.post("/template/topic", async (req, res) => {
   try {
     const today = new Date().toDateString();
-    const { grade } = req.body;
+    const body = req.body;
+    const grade = body.student_grade;
     // console.log(grade);
     const weeklyData = await getScheduleFromSheet();
     // console.log(weeklyData);
@@ -1822,11 +1823,12 @@ const getMaxAndAvgScoreBasedonGrade = async (grade) => {
 
 app.post("/template/highestScore", async (req, res) => {
   try {
-    const { grade } = req.body;
+    const body = req.body;
+    const grade = body.student_grade;
     // console.log(grade);
     const finalData = await getMaxAndAvgScoreBasedonGrade(grade);
     const max = finalData[0].correct;
-    return res.send({ max });
+    return res.send({ data: max });
   } catch (error) {
     return res.status(500).send({
       error,
@@ -1836,7 +1838,8 @@ app.post("/template/highestScore", async (req, res) => {
 
 app.post("/template/avgScore", async (req, res) => {
   try {
-    const { grade } = req.body;
+    const body = req.body;
+    const grade = body.student_grade;
     const finalData = await getMaxAndAvgScoreBasedonGrade(grade);
     const length = finalData.length;
     const total = finalData.reduce(
@@ -1844,7 +1847,7 @@ app.post("/template/avgScore", async (req, res) => {
         previousValue.correct + currentValue.correct
     );
     const avg = Math.round(total / length);
-    return res.send({ avg });
+    return res.send({ data: avg });
   } catch (error) {
     return res.status(500).send({
       error,
@@ -1855,8 +1858,8 @@ app.post("/template/avgScore", async (req, res) => {
 app.post("/template/totalParticipants", async (req, res) => {
   try {
     const today = new Date().toDateString();
-    const { grade } = req.body;
-    // console.log(grade);
+    const body = req.body;
+    const grade = body.student_grade;
     const spreadsheetId = process.env.SPREADSHEET_ID;
     const auth = new google.auth.GoogleAuth({
       keyFile: "key.json", //the key file
@@ -1891,11 +1894,8 @@ app.post("/template/totalParticipants", async (req, res) => {
         finalData.push(dateData[i]);
       }
     }
-
-    // console.log("5");
-
     res.send({
-      totalParticipants: finalData.length,
+      data: finalData.length,
     });
   } catch (error) {
     res.status(500).send({
