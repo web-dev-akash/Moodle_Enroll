@@ -1631,16 +1631,21 @@ const getScheduleFromSheet = async () => {
   const readData = await sheet.spreadsheets.values.get({
     auth, //auth object
     spreadsheetId, // spreadsheet id
-    range: "Schedule!A:H", //range of cells to read from.
+    range: "Schedule!A:I", //range of cells to read from.
   });
   const data = readData.data.values;
+  // console.log(data);
   for (let i = 1; i < data.length; i++) {
-    const day = data[i][2];
-    const date = data[i][3].split("/");
-    const time = data[i][4];
-    const grade = data[i][5];
-    const subject = data[i][6];
-    const topic = data[i][7];
+    // i === 1 && console.log(data[i]);
+    const sessionid = data[i][0] ? data[i][0] : "";
+    const day = data[i][3];
+    const date = data[i][4].split("/");
+    const time = data[i][5];
+    const grade = data[i][6];
+    const subject = data[i][7];
+    const topic = data[i].length > 8 ? data[i][8] : "NA";
+
+    // console.log(topic);
 
     const newDate = new Date(date[2], Number(date[1]) - 1, date[0]);
     const timestamp = Math.floor(newDate.getTime() / 1000);
@@ -1652,6 +1657,7 @@ const getScheduleFromSheet = async () => {
         subject,
         topic,
         timestamp,
+        sessionid,
       };
       finalWeeklyData.push(obj);
     }
@@ -1744,6 +1750,152 @@ app.get("/previousReport", async (req, res) => {
     const data = await getPreviousReportData(email);
     res.send({
       data,
+    });
+  } catch (error) {
+    res.status(500).send({
+      error,
+    });
+  }
+});
+
+app.post("/template/topic", async (req, res) => {
+  try {
+    const today = new Date().toDateString();
+    const { grade } = req.body;
+    // console.log(grade);
+    const weeklyData = await getScheduleFromSheet();
+    // console.log(weeklyData);
+    const gradeData = weeklyData.filter((val) => val.grade == grade);
+    const todaysTopic = gradeData.filter((val) => {
+      const date = new Date(val.timestamp * 1000).toDateString();
+      return date === today;
+    });
+    if (todaysTopic.length === 0) {
+      return res.status(404).send({ message: "No Topic for Today" });
+    }
+    res.send({ data: todaysTopic[0].subject });
+  } catch (error) {
+    res.status(500).send({
+      error,
+    });
+  }
+});
+
+const getMaxAndAvgScoreBasedonGrade = async (grade) => {
+  const today = new Date().toDateString();
+  const weeklyData = await getScheduleFromSheet();
+  const gradeData = weeklyData.filter((val) => val.grade == grade);
+  const todaysTopic = gradeData.filter((val) => {
+    const date = new Date(val.timestamp * 1000).toDateString();
+    return date === today;
+  });
+  if (todaysTopic.length === 0) {
+    return res.status(404).send({ message: "No Topic for Today" });
+  }
+  const topic = todaysTopic[0];
+
+  // const percentArray = [];
+  const rows = await getSheetData();
+  // return res.send({ rows });
+  const aggregatedData = [];
+  for (let i = 0; i < rows.length; i++) {
+    const sessionid = rows[i].c[5].v;
+    const grade = rows[i].c[8].v;
+    const date = rows[i].c[4].f;
+    const correct = rows[i].c[2].v;
+    if (grade === topic.grade) {
+      aggregatedData.push({ sessionid, date, correct });
+    }
+  }
+
+  const todaysData = aggregatedData.filter((val) => {
+    return (
+      +val.sessionid === +topic.sessionid &&
+      new Date(val.date).toDateString() ==
+        new Date(topic.timestamp * 1000).toDateString()
+    );
+  });
+
+  const finalData = todaysData.sort((a, b) => b.correct - a.correct);
+  return finalData;
+};
+
+app.post("/template/highestScore", async (req, res) => {
+  try {
+    const { grade } = req.body;
+    // console.log(grade);
+    const finalData = await getMaxAndAvgScoreBasedonGrade(grade);
+    const max = finalData[0].correct;
+    return res.send({ max });
+  } catch (error) {
+    return res.status(500).send({
+      error,
+    });
+  }
+});
+
+app.post("/template/avgScore", async (req, res) => {
+  try {
+    const { grade } = req.body;
+    const finalData = await getMaxAndAvgScoreBasedonGrade(grade);
+    const length = finalData.length;
+    const total = finalData.reduce(
+      (previousValue, currentValue) =>
+        previousValue.correct + currentValue.correct
+    );
+    const avg = Math.round(total / length);
+    return res.send({ avg });
+  } catch (error) {
+    return res.status(500).send({
+      error,
+    });
+  }
+});
+
+app.post("/template/totalParticipants", async (req, res) => {
+  try {
+    const today = new Date().toDateString();
+    const { grade } = req.body;
+    // console.log(grade);
+    const spreadsheetId = process.env.SPREADSHEET_ID;
+    const auth = new google.auth.GoogleAuth({
+      keyFile: "key.json", //the key file
+      scopes: "https://www.googleapis.com/auth/spreadsheets",
+    });
+    // console.log("1");
+    const authClientObject = await auth.getClient();
+    const sheet = google.sheets({
+      version: "v4",
+      auth: authClientObject,
+    });
+    // console.log("2");
+
+    const readData = await sheet.spreadsheets.values.get({
+      auth, //auth object
+      spreadsheetId, // spreadsheet id
+      range: "Vevox Data!E:I", //range of cells to read from.
+    });
+    // console.log("3");
+
+    const data = readData.data.values;
+    const gradeData = data.filter((val) => val[4] === grade);
+    const dateData = gradeData.filter((val) => {
+      return new Date(val[1]).toDateString() === today;
+    });
+    // console.log("4");
+
+    const finalData = [];
+    for (let i = 0; i < dateData.length; i++) {
+      const existingUser = finalData.find((val) => val[0] === dateData[i][0]);
+      if (!existingUser) {
+        finalData.push(dateData[i]);
+      }
+    }
+
+    // console.log("5");
+
+    res.send({
+      totalParticipants: finalData.length,
     });
   } catch (error) {
     res.status(500).send({
