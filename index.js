@@ -1087,7 +1087,6 @@ const getSheetData = async () => {
 
 const updateReportLogsinGoogleSheet = async (user) => {
   // console.log("sheet 1");
-  const date = new Date().getDate();
   const spreadsheetId = process.env.SPREADSHEET_ID;
   const auth = new google.auth.GoogleAuth({
     keyFile: "key.json", //the key file
@@ -1766,7 +1765,7 @@ app.post("/template/topic", async (req, res) => {
     // console.log(grade);
     const weeklyData = await getScheduleFromSheet();
     // console.log(weeklyData);
-    const gradeData = weeklyData.filter((val) => val.grade == grade);
+    const gradeData = weeklyData.filter((val) => val.grade.includes(grade));
     const todaysTopic = gradeData.filter((val) => {
       const date = new Date(val.timestamp * 1000).toDateString();
       return date === today;
@@ -1774,7 +1773,8 @@ app.post("/template/topic", async (req, res) => {
     if (todaysTopic.length === 0) {
       return res.status(404).send({ message: "No Topic for Today" });
     }
-    res.send({ data: todaysTopic[0].subject });
+    console.log(todaysTopic);
+    res.send({ data: todaysTopic[0].topic });
   } catch (error) {
     res.status(500).send({
       error,
@@ -1785,7 +1785,7 @@ app.post("/template/topic", async (req, res) => {
 const getMaxAndAvgScoreBasedonGrade = async (grade) => {
   const today = new Date().toDateString();
   const weeklyData = await getScheduleFromSheet();
-  const gradeData = weeklyData.filter((val) => val.grade == grade);
+  const gradeData = weeklyData.filter((val) => val.grade.includes(grade));
   const todaysTopic = gradeData.filter((val) => {
     const date = new Date(val.timestamp * 1000).toDateString();
     return date === today;
@@ -1794,29 +1794,33 @@ const getMaxAndAvgScoreBasedonGrade = async (grade) => {
     return res.status(404).send({ message: "No Topic for Today" });
   }
   const topic = todaysTopic[0];
+  console.log(topic.grade);
 
   // const percentArray = [];
   const rows = await getSheetData();
-  // return res.send({ rows });
   const aggregatedData = [];
   for (let i = 0; i < rows.length; i++) {
-    const sessionid = rows[i].c[5].v;
-    const grade = rows[i].c[8].v;
-    const date = rows[i].c[4].f;
-    const correct = rows[i].c[2].v;
-    if (grade === topic.grade) {
-      aggregatedData.push({ sessionid, date, correct });
+    // console.log(rows[i]);
+    if (rows[i] && rows[i].c[0] !== null) {
+      const sessionid = rows[i].c[5].v;
+      const grade = rows[i].c[8].v;
+      const date = rows[i].c[4].f;
+      const correct = rows[i].c[2].v;
+      if (grade == topic.grade) {
+        aggregatedData.push({ sessionid, date, correct });
+      }
     }
   }
-
+  // console.log(aggregatedData);
   const todaysData = aggregatedData.filter((val) => {
+    console.log("Vevox", val.sessionid);
+    console.log("Todays", topic.sessionid);
     return (
-      +val.sessionid === +topic.sessionid &&
+      Number(val.sessionid) === Number(topic.sessionid) &&
       new Date(val.date).toDateString() ==
         new Date(topic.timestamp * 1000).toDateString()
     );
   });
-
   const finalData = todaysData.sort((a, b) => b.correct - a.correct);
   return finalData;
 };
@@ -1825,7 +1829,6 @@ app.post("/template/highestScore", async (req, res) => {
   try {
     const body = req.body;
     const grade = body.student_grade;
-    // console.log(grade);
     const finalData = await getMaxAndAvgScoreBasedonGrade(grade);
     const max = finalData[0].correct;
     return res.send({ data: max });
@@ -1841,12 +1844,14 @@ app.post("/template/avgScore", async (req, res) => {
     const body = req.body;
     const grade = body.student_grade;
     const finalData = await getMaxAndAvgScoreBasedonGrade(grade);
+    // return finalData
     const length = finalData.length;
-    const total = finalData.reduce(
-      (previousValue, currentValue) =>
-        previousValue.correct + currentValue.correct
-    );
+    let total = 0;
+    for (let i = 0; i < length; i++) {
+      total += finalData[i].correct;
+    }
     const avg = Math.round(total / length);
+    // console.log(avg);
     return res.send({ data: avg });
   } catch (error) {
     return res.status(500).send({
