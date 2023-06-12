@@ -1881,10 +1881,11 @@ app.post("/template/totalParticipants", async (req, res) => {
     // console.log("3");
 
     const data = readData.data.values;
-    const gradeData = data.filter((val) => val[4] === grade);
+    const gradeData = data.filter((val) => val[4].includes(grade));
     const dateData = gradeData.filter((val) => {
-      return new Date(val[1]).toDateString() === today;
+      return new Date(val[0]).toDateString() === today;
     });
+    // console.log(dateData);
     // console.log("4");
 
     const finalData = [];
