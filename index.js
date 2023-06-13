@@ -363,63 +363,63 @@ const updateTrailSubscription = async (userId, subscription, expiry) => {
   return res.data;
 };
 
-function getUniqueObjects(arr, prop) {
-  const seen = new Set();
-  return arr.filter((obj) => {
-    const key = prop ? obj[prop] : JSON.stringify(obj);
-    return seen.has(key) ? false : seen.add(key);
-  });
-}
+// function getUniqueObjects(arr, prop) {
+//   const seen = new Set();
+//   return arr.filter((obj) => {
+//     const key = prop ? obj[prop] : JSON.stringify(obj);
+//     return seen.has(key) ? false : seen.add(key);
+//   });
+// }
 
-const changeSubscriptionType = async () => {
-  let start = new Date().setHours(23, 59, 59, 999);
-  let startTime = Math.floor(start.valueOf() / 1000);
-  const totalLiveQuizUsers = [];
-  try {
-    for (let i = 0; i < 12; i++) {
-      const courseid = allLiveQuizCourses[i];
-      const res = await axios.get(
-        `${url}?wstoken=${wstoken}&wsfunction=core_enrol_get_enrolled_users&courseid=${courseid}&moodlewsrestformat=json`
-      );
-      if (res.data && res.data.length > 0) {
-        const data = res.data;
-        for (let j = 0; j < data.length; j++) {
-          totalLiveQuizUsers.push(data[j]);
-        }
-      }
-    }
-    const filteredUsers = getUniqueObjects(totalLiveQuizUsers, "id");
-    for (let i = 0; i < filteredUsers.length; i++) {
-      const data = filteredUsers[i].customfields;
-      const timestamp = Number(data[data.length - 3].value);
-      if (startTime + 86400 == timestamp) {
-        await updateTrailSubscription(filteredUsers[i].id, "Trail Expired", 0);
-      } else {
-        return false;
-      }
-    }
-    return true;
-  } catch (error) {
-    return error;
-  }
-};
+// const changeSubscriptionType = async () => {
+//   let start = new Date().setHours(23, 59, 59, 999);
+//   let startTime = Math.floor(start.valueOf() / 1000);
+//   const totalLiveQuizUsers = [];
+//   try {
+//     for (let i = 0; i < 12; i++) {
+//       const courseid = allLiveQuizCourses[i];
+//       const res = await axios.get(
+//         `${url}?wstoken=${wstoken}&wsfunction=core_enrol_get_enrolled_users&courseid=${courseid}&moodlewsrestformat=json`
+//       );
+//       if (res.data && res.data.length > 0) {
+//         const data = res.data;
+//         for (let j = 0; j < data.length; j++) {
+//           totalLiveQuizUsers.push(data[j]);
+//         }
+//       }
+//     }
+//     const filteredUsers = getUniqueObjects(totalLiveQuizUsers, "id");
+//     for (let i = 0; i < filteredUsers.length; i++) {
+//       const data = filteredUsers[i].customfields;
+//       const timestamp = Number(data[data.length - 3].value);
+//       if (startTime + 86400 == timestamp) {
+//         await updateTrailSubscription(filteredUsers[i].id, "Trail Expired", 0);
+//       } else {
+//         return false;
+//       }
+//     }
+//     return true;
+//   } catch (error) {
+//     return error;
+//   }
+// };
 
 // cron.schedule("59 23 * * *", async () => {
 // });
 
-app.get("/changeSubscriptionType", async (req, res) => {
-  try {
-    const data = await changeSubscriptionType();
-    console.log(data);
-    return res.status(200).send({
-      data,
-    });
-  } catch (error) {
-    return res.status(500).send({
-      error,
-    });
-  }
-});
+// app.get("/changeSubscriptionType", async (req, res) => {
+//   try {
+//     const data = await changeSubscriptionType();
+//     console.log(data);
+//     return res.status(200).send({
+//       data,
+//     });
+//   } catch (error) {
+//     return res.status(500).send({
+//       error,
+//     });
+//   }
+// });
 
 app.post("/createTrailUser", authMiddleware, async (req, res) => {
   try {
@@ -589,6 +589,7 @@ const updatePaidSubscription = async (userid, endTime) => {
 
 app.post("/enrolPaidUser", authMiddleware, async (req, res) => {
   const { list_of_subjects, student_grade, email } = req.body;
+
   const user = await getExistingUser(email);
   const userId = user[0].id;
   const { startTime, endTime } = getPaidTime();
