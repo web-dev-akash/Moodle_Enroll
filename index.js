@@ -397,13 +397,12 @@ const changeSubscriptionType = async () => {
 };
 
 // cron.schedule("59 23 * * *", async () => {
-//   const data = await changeSubscriptionType();
-//   console.log(data);
 // });
 
-app.get("/moodle", async (req, res) => {
+app.get("/changeSubscriptionType", async (req, res) => {
   try {
-    const data = req.body;
+    const data = await changeSubscriptionType();
+    console.log(data);
     return res.status(200).send({
       data,
     });
@@ -1230,40 +1229,48 @@ const updateTagBasedOnSessionAttepted = async (email) => {
 app.get("/reports", async (req, res) => {
   try {
     const email = req.query.email;
+    console.log("first");
     await updateTagBasedOnSessionAttepted(email);
-    const grades = [4, 5, 6, 7];
+    const grades = [3, 4, 5];
     const percentArray = [];
     const rows = await getSheetData();
+    console.log("second");
     const aggregatedData = [];
     for (let i = 0; i < rows.length; i++) {
-      const email = rows[i].c[3].v;
-      const correct = rows[i].c[2].v;
-      const attempted = rows[i].c[6].v;
-      const polled = rows[i].c[7].v;
-      const grade = rows[i].c[8].v;
-      const name =
-        rows[i].c[1] !== null
-          ? `${rows[i].c[0].v} ${rows[i].c[1].v}`
-          : `${rows[i].c[0].v}`;
-      const existingUser = aggregatedData.find((user) => user.email === email);
+      if (rows[i] && rows[i].c && rows[i].c[0] !== null) {
+        const email = rows[i].c[3].v;
+        const correct = rows[i].c[2].v;
+        const attempted = rows[i].c[6].v;
+        const polled = rows[i].c[7].v;
+        const sessionid = rows[i].c[5].v;
+        const grade = Number(rows[i].c[8].v.substring(6, 7));
+        i === 0 && console.log(grade);
+        const name =
+          rows[i].c[1] !== null
+            ? `${rows[i].c[0].v} ${rows[i].c[1].v}`
+            : `${rows[i].c[0].v}`;
+        const existingUser = aggregatedData.find(
+          (user) => user.email === email
+        );
 
-      if (existingUser) {
-        existingUser.correct += correct;
-        existingUser.attempted += attempted;
-        existingUser.polled += polled;
-      } else {
-        const newUser = {
-          email: email,
-          grade: grade,
-          correct: correct,
-          attempted: attempted,
-          polled: polled,
-          name: name,
-        };
-        aggregatedData.push(newUser);
+        if (existingUser) {
+          existingUser.correct += correct;
+          existingUser.attempted += attempted;
+          existingUser.polled += polled;
+        } else {
+          const newUser = {
+            email: email,
+            grade: grade,
+            correct: correct,
+            attempted: attempted,
+            polled: polled,
+            name: name,
+            sessionid,
+          };
+          aggregatedData.push(newUser);
+        }
       }
     }
-    // console.log("third");
     for (let i = 0; i < aggregatedData.length; i++) {
       const email = aggregatedData[i].email;
       const correct = aggregatedData[i].correct;
@@ -1271,6 +1278,7 @@ app.get("/reports", async (req, res) => {
       const polled = aggregatedData[i].polled;
       const grade = aggregatedData[i].grade;
       const name = aggregatedData[i].name;
+      const sessionid = aggregatedData[i].sessionid;
       const percent = percentage(correct, polled);
       percentArray.push({
         email,
@@ -1280,6 +1288,7 @@ app.get("/reports", async (req, res) => {
         correct,
         polled,
         name,
+        sessionid,
       });
     }
     const sortedPercentArray = percentArray.sort(
@@ -1290,7 +1299,7 @@ app.get("/reports", async (req, res) => {
       const percentileArray = [];
       const grade = grades[j];
       const data = sortedPercentArray.filter((user) => {
-        return user.grade == grade;
+        return user.grade === grade;
       });
       for (let i = 0; i < data.length; i++) {
         const p = Math.round((i / data.length) * 100);
@@ -1320,10 +1329,13 @@ app.get("/reports", async (req, res) => {
       }
       finalData.push(...percentileArray);
     }
-    // console.log("four");
+    console.log("four");
     const user = finalData.filter((value) => {
-      return value.email === email;
+      console.log(value.email, email);
+
+      return value.email.trim() == email.trim();
     });
+
     if (!user || user.length == 0) {
       return res.status(404).send({
         status: "error",
@@ -1331,7 +1343,7 @@ app.get("/reports", async (req, res) => {
       });
     }
     await updateReportLogsinGoogleSheet(user);
-    // console.log("five");
+    console.log("five");
     return res.status(200).send({
       user,
     });
