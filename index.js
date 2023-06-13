@@ -1503,7 +1503,7 @@ const checkRegularAttendeeTag = async (email) => {
   const body = {
     tags: [
       {
-        name: "regularattendance",
+        name: "attendedmorethanonequiz",
         id: "4878003000000773058",
         color_code: "#FEDA62",
       },
