@@ -21,24 +21,28 @@ const cron = require("node-cron");
 const courseFormat = [
   {
     // Math
+    G3: "453",
     G4: "420",
     G5: "421",
     G6: "422",
   },
   {
     // English
+    G3: "452",
     G4: "424",
     G5: "425",
     G6: "426",
   },
   {
     // Science
+    G3: "456",
     G4: "427",
     G5: "428",
     G6: "429",
   },
   {
     // GK
+    G3: "457",
     G4: "430",
     G5: "431",
     G6: "432",
@@ -46,15 +50,19 @@ const courseFormat = [
 ];
 
 const allLiveQuizCourses = [
+  "453",
   "420",
   "421",
   "422",
+  "452",
   "424",
   "425",
   "426",
+  "456",
   "427",
   "428",
   "429",
+  "457",
   "430",
   "431",
   "432",
@@ -264,90 +272,90 @@ const addTagsToDeal = async (dealId, zohoConfig) => {
   );
 };
 
-const getGrade = (index) => {
-  const grades = ["4", "5", "6"];
-  const gradeIndex = index % grades.length;
-  return grades[gradeIndex];
-};
+// const getGrade = (index) => {
+//   const grades = ["3", "4", "5", "6"];
+//   const gradeIndex = index % grades.length;
+//   return grades[gradeIndex];
+// };
 
-app.get("/getWeeklySchedule", async (req, res) => {
-  try {
-    const phone = req.query.phone;
-    if (phone) {
-      const zohoToken = await getZohoToken();
-      const zohoConfig = {
-        headers: {
-          Authorization: `Bearer ${zohoToken}`,
-        },
-      };
+// app.get("/getWeeklySchedule", async (req, res) => {
+//   try {
+//     const phone = req.query.phone;
+//     if (phone) {
+//       const zohoToken = await getZohoToken();
+//       const zohoConfig = {
+//         headers: {
+//           Authorization: `Bearer ${zohoToken}`,
+//         },
+//       };
 
-      await updateScheduleLogsinGoogleSheet(phone);
+//       await updateScheduleLogsinGoogleSheet(phone);
 
-      const contact = await searchContactInZoho(phone, zohoConfig);
-      if (!contact.data) {
-        return res.status(200).send("Not a Contact in Zoho");
-      }
-      const contactId = contact.data[0].id;
-      await addTagsToContact(contactId, zohoConfig);
+//       const contact = await searchContactInZoho(phone, zohoConfig);
+//       if (!contact.data) {
+//         return res.status(200).send("Not a Contact in Zoho");
+//       }
+//       const contactId = contact.data[0].id;
+//       await addTagsToContact(contactId, zohoConfig);
 
-      const deal = await searchDealByContact(contactId, zohoConfig);
-      if (deal.data && deal.data.length > 0) {
-        const dealId = deal.data[0].id;
-        await addTagsToDeal(dealId, zohoConfig);
-      }
-    }
+//       const deal = await searchDealByContact(contactId, zohoConfig);
+//       if (deal.data && deal.data.length > 0) {
+//         const dealId = deal.data[0].id;
+//         await addTagsToDeal(dealId, zohoConfig);
+//       }
+//     }
 
-    const finalWeeklyData = [];
-    const weeklyData = await getWeeklySchedule(url, wstoken);
+//     const finalWeeklyData = [];
+//     const weeklyData = await getWeeklySchedule(url, wstoken);
 
-    for (i = 0; i < allLiveQuizCourses.length; i++) {
-      let cid = allLiveQuizCourses[i];
-      let subject = "";
-      if (i <= 2) {
-        subject = "Math";
-      } else if (i > 2 && i <= 5) {
-        subject = "English";
-      } else if (i > 5 && i <= 8) {
-        subject = "Science";
-      } else if (i > 8 && i <= 11) {
-        subject = "GK";
-      }
-      let grade = getGrade(i);
-      const courseData = await getCourseContent(cid);
-      courseData.forEach((res) => {
-        const data = res.modules;
-        if (data.length > 0) {
-          data.forEach((module) => {
-            // console.log("module", module.instance);
-            weeklyData.forEach((week) => {
-              // console.log("week", week.instance);
-              if (week.instance === module.instance) {
-                let time = week.timestart - 2400;
-                finalWeeklyData.push({
-                  subject,
-                  name: res.name,
-                  timestamp: time,
-                  grade,
-                });
-              }
-            });
-          });
-        }
-      });
-    }
+//     for (i = 0; i < allLiveQuizCourses.length; i++) {
+//       let cid = allLiveQuizCourses[i];
+//       let subject = "";
+//       if (i <= 2) {
+//         subject = "Math";
+//       } else if (i > 2 && i <= 5) {
+//         subject = "English";
+//       } else if (i > 5 && i <= 8) {
+//         subject = "Science";
+//       } else if (i > 8 && i <= 11) {
+//         subject = "GK";
+//       }
+//       let grade = getGrade(i);
+//       const courseData = await getCourseContent(cid);
+//       courseData.forEach((res) => {
+//         const data = res.modules;
+//         if (data.length > 0) {
+//           data.forEach((module) => {
+//             // console.log("module", module.instance);
+//             weeklyData.forEach((week) => {
+//               // console.log("week", week.instance);
+//               if (week.instance === module.instance) {
+//                 let time = week.timestart - 2400;
+//                 finalWeeklyData.push({
+//                   subject,
+//                   name: res.name,
+//                   timestamp: time,
+//                   grade,
+//                 });
+//               }
+//             });
+//           });
+//         }
+//       });
+//     }
 
-    return res.status(200).send({
-      status: "success",
-      data: finalWeeklyData,
-    });
-  } catch (error) {
-    console.log(error);
-    return res.status(500).send({
-      status: "error",
-      error,
-    });
-  }
-});
+//     return res.status(200).send({
+//       status: "success",
+//       data: finalWeeklyData,
+//     });
+//   } catch (error) {
+//     console.log(error);
+//     return res.status(500).send({
+//       status: "error",
+//       error,
+//     });
+//   }
+// });
 
 const updateTrailSubscription = async (userId, subscription, expiry) => {
   const urlS = `${url}?wstoken=${wstoken}&wsfunction=core_user_update_users&users[0][id]=${userId}&users[0][customfields][0][type]=live_quiz_subscription&users[0][customfields][0][value]=${subscription}&users[0][customfields][1][type]=trailexpirydate&users[0][customfields][1][value]=${expiry}&moodlewsrestformat=json`;
@@ -432,12 +440,12 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
       }
     }
     let grade = "";
-    if (student_grade.includes("4")) {
+    if (student_grade.includes("3")) {
+      grade = "G3";
+    } else if (student_grade.includes("4")) {
       grade = "G4";
     } else if (student_grade.includes("5")) {
       grade = "G5";
-    } else {
-      grade = "G6";
     }
     const userExist = await getExistingUser(email);
     let { startTime, endTime } = getTrailTime();
@@ -585,12 +593,12 @@ app.post("/enrolPaidUser", authMiddleware, async (req, res) => {
   const userId = user[0].id;
   const { startTime, endTime } = getPaidTime();
   let grade = "";
-  if (student_grade.includes("4")) {
+  if (student_grade.includes("3")) {
+    grade = "G3";
+  } else if (student_grade.includes("4")) {
     grade = "G4";
   } else if (student_grade.includes("5")) {
     grade = "G5";
-  } else if (student_grade.includes("6")) {
-    grade = "G6";
   } else {
     return res.status(404).send({
       status: "error",
