@@ -151,36 +151,6 @@
       "color_code": "#57B1FD"
     },
     {
-      "created_time": "2023-06-05T12:00:42+05:30",
-      "modified_time": "2023-06-05T12:00:42+05:30",
-      "name": "visitedlandingpage",
-      "modified_by": {
-        "name": "Rieti Phalpher",
-        "id": "4878003000000305001"
-      },
-      "id": "4878003000001336310",
-      "created_by": {
-        "name": "Rieti Phalpher",
-        "id": "4878003000000305001"
-      },
-      "color_code": "#879BFC"
-    },
-    {
-      "created_time": "2023-06-05T12:01:01+05:30",
-      "modified_time": "2023-06-05T12:01:01+05:30",
-      "name": "spenttimeonlandingpage",
-      "modified_by": {
-        "name": "Rieti Phalpher",
-        "id": "4878003000000305001"
-      },
-      "id": "4878003000001336319",
-      "created_by": {
-        "name": "Rieti Phalpher",
-        "id": "4878003000000305001"
-      },
-      "color_code": "#63C57E"
-    },
-    {
       "created_time": "2023-06-05T12:02:17+05:30",
       "modified_time": "2023-06-05T12:02:17+05:30",
       "name": "generatedpaymentlink",
@@ -197,8 +167,8 @@
     },
     {
       "created_time": "2023-06-05T12:04:14+05:30",
-      "modified_time": "2023-06-05T12:04:14+05:30",
-      "name": "askedquestions",
+      "modified_time": "2023-06-08T07:46:11+05:30",
+      "name": "questionsbeforeattendee",
       "modified_by": {
         "name": "Rieti Phalpher",
         "id": "4878003000000305001"
@@ -256,6 +226,21 @@
       "color_code": "#B88562"
     },
     {
+      "created_time": "2023-06-06T22:04:23+05:30",
+      "modified_time": "2023-06-06T22:04:23+05:30",
+      "name": "null",
+      "modified_by": {
+        "name": "Rieti Phalpher",
+        "id": "4878003000000305001"
+      },
+      "id": "4878003000001363256",
+      "created_by": {
+        "name": "Rieti Phalpher",
+        "id": "4878003000000305001"
+      },
+      "color_code": null
+    },
+    {
       "created_time": "2023-06-06T05:51:45+05:30",
       "modified_time": "2023-06-06T16:05:44+05:30",
       "name": "sawlivequizschedule",
@@ -299,6 +284,66 @@
         "id": "4878003000000305001"
       },
       "color_code": "#F17574"
+    },
+    {
+      "created_time": "2023-06-08T07:46:32+05:30",
+      "modified_time": "2023-06-08T07:46:32+05:30",
+      "name": "questionsafterattendee",
+      "modified_by": {
+        "name": "Rieti Phalpher",
+        "id": "4878003000000305001"
+      },
+      "id": "4878003000001472005",
+      "created_by": {
+        "name": "Rieti Phalpher",
+        "id": "4878003000000305001"
+      },
+      "color_code": "#E7A826"
+    },
+    {
+      "created_time": "2023-06-08T07:53:15+05:30",
+      "modified_time": "2023-06-08T07:53:15+05:30",
+      "name": "loginfailed",
+      "modified_by": {
+        "name": "Rieti Phalpher",
+        "id": "4878003000000305001"
+      },
+      "id": "4878003000001472029",
+      "created_by": {
+        "name": "Rieti Phalpher",
+        "id": "4878003000000305001"
+      },
+      "color_code": "#969696"
+    },
+    {
+      "created_time": "2023-06-08T09:43:28+05:30",
+      "modified_time": "2023-06-08T09:43:28+05:30",
+      "name": "loginvideoviewed",
+      "modified_by": {
+        "name": "Rieti Phalpher",
+        "id": "4878003000000305001"
+      },
+      "id": "4878003000001474987",
+      "created_by": {
+        "name": "Rieti Phalpher",
+        "id": "4878003000000305001"
+      },
+      "color_code": "#1DB9B4"
+    },
+    {
+      "created_time": "2023-06-13T12:02:49+05:30",
+      "modified_time": "2023-06-13T12:02:49+05:30",
+      "name": "viewedexplainervideo",
+      "modified_by": {
+        "name": "Rieti Phalpher",
+        "id": "4878003000000305001"
+      },
+      "id": "4878003000001644005",
+      "created_by": {
+        "name": "Rieti Phalpher",
+        "id": "4878003000000305001"
+      },
+      "color_code": null
     }
   ],
 

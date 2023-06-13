@@ -1331,8 +1331,6 @@ app.get("/reports", async (req, res) => {
     }
     console.log("four");
     const user = finalData.filter((value) => {
-      console.log(value.email, email);
-
       return value.email.trim() == email.trim();
     });
 
@@ -1917,6 +1915,58 @@ app.post("/template/totalParticipants", async (req, res) => {
     });
   } catch (error) {
     res.status(500).send({
+      error,
+    });
+  }
+});
+
+app.post("/loginFailed", async (req, res) => {
+  try {
+    const data = req.body;
+    const email = data.other.username;
+    const zohoToken = await getZohoToken();
+    const zohoConfig = {
+      headers: {
+        Authorization: `Bearer ${zohoToken}`,
+        "Content-Type": "application/json",
+      },
+    };
+    const contact = await axios.get(
+      `https://www.zohoapis.com/crm/v3/Contacts/search?email=${email}`,
+      zohoConfig
+    );
+    if (!contact.data) {
+      return "Not a Zoho Contact";
+    }
+    const contactid = contact.data.data[0].id;
+    const dealData = await axios.get(
+      `https://www.zohoapis.com/crm/v3/Deals/search?criteria=((Contact_Name:equals:${contactid}))`,
+      zohoConfig
+    );
+    if (!dealData.data) {
+      return "Not converted to deal";
+    }
+    const dealid = dealData.data.data[0].id;
+    const body = {
+      tags: [
+        {
+          name: "loginfailed",
+          id: "4878003000001472029",
+          color_code: "#969696",
+        },
+      ],
+    };
+    const updateTag = await axios.post(
+      `https://www.zohoapis.com/crm/v3/Deals/${dealid}/actions/add_tags`,
+      body,
+      zohoConfig
+    );
+
+    return res.send({
+      data: updateTag.data,
+    });
+  } catch (error) {
+    return res.status(500).send({
       error,
     });
   }
