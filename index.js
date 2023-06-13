@@ -1683,6 +1683,73 @@ const getScheduleFromSheet = async () => {
   return finalWeeklyData;
 };
 
+const getDailySchedule = async () => {
+  const { startTime, endTime } = getTrailTime();
+  const finalWeeklyData = [];
+  const spreadsheetId = process.env.SCHEDULE_SPREADSHEET_ID;
+  const auth = new google.auth.GoogleAuth({
+    keyFile: "key.json", //the key file
+    scopes: "https://www.googleapis.com/auth/spreadsheets",
+  });
+
+  const authClientObject = await auth.getClient();
+  const sheet = google.sheets({
+    version: "v4",
+    auth: authClientObject,
+  });
+
+  const readData = await sheet.spreadsheets.values.get({
+    auth, //auth object
+    spreadsheetId, // spreadsheet id
+    range: "Schedule!A:I", //range of cells to read from.
+  });
+  const data = readData.data.values;
+  console.log(data);
+  // console.log(data);
+  for (let i = 1; i < data.length; i++) {
+    // i === 1 && console.log(data[i]);
+    const sessionid = data[i][0] ? data[i][0] : "";
+    const day = data[i][3];
+    const date = data[i][4].split("/");
+    const time = data[i][5];
+    const grade = data[i][6];
+    const subject = data[i][7];
+    const topic = data[i].length > 8 ? data[i][8] : "NA";
+
+    // console.log(topic);
+
+    const newDate = new Date(date[2], Number(date[1]) - 1, date[0]);
+    const timestamp = Math.floor(newDate.getTime() / 1000);
+    if (timestamp == startTime) {
+      const obj = {
+        day,
+        time,
+        grade,
+        subject,
+        topic,
+        timestamp,
+        sessionid,
+      };
+      finalWeeklyData.push(obj);
+    }
+  }
+  return finalWeeklyData;
+};
+
+app.get("/dailySchedule", async (req, res) => {
+  try {
+    const data = await getDailySchedule();
+    console.log(data);
+    res.send({
+      data,
+    });
+  } catch (error) {
+    res.status(500).send({
+      error,
+    });
+  }
+});
+
 app.get("/weeklySchedule", async (req, res) => {
   try {
     const phone = req.query.phone;
