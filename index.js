@@ -155,7 +155,7 @@ const createUser = async ({
   trialExpiry,
 }) => {
   const res = await axios.post(
-    `${url}?wstoken=${wstoken}&wsfunction=${wsfunctionCreate}&users[0][username]=${email}&users[0][password]=${phone}&users[0][firstname]=${firstname}&users[0][lastname]=${lastname}&users[0][email]=${email}&users[0][phone1]=${phone}&users[0][customfields][0][type]=live_quiz_subscription&users[0][customfields][0][value]=${subscription}&users[0][customfields][1][type]=trailexpirydate&users[0][customfields][1][value]=${trialExpiry}&moodlewsrestformat=json`
+    `${url}?wstoken=${wstoken}&wsfunction=${wsfunctionCreate}&users[0][username]=${email}&users[0][password]=${phone}&users[0][firstname]=${firstname}&users[0][lastname]=${lastname}&users[0][email]=${email}&users[0][phone1]=${phone}&users[0][customfields][0][type]=live_quiz_subscription&users[0][customfields][0][value]=${subscription}&users[0][customfields][1][type]=trialexpirydate&users[0][customfields][1][value]=${trialExpiry}&moodlewsrestformat=json`
   );
   return res.data;
 };
@@ -358,7 +358,7 @@ const addTagsToDeal = async (dealId, zohoConfig) => {
 // });
 
 const updateTrailSubscription = async (userId, subscription, expiry) => {
-  const urlS = `${url}?wstoken=${wstoken}&wsfunction=core_user_update_users&users[0][id]=${userId}&users[0][customfields][0][type]=live_quiz_subscription&users[0][customfields][0][value]=${subscription}&users[0][customfields][1][type]=trailexpirydate&users[0][customfields][1][value]=${expiry}&moodlewsrestformat=json`;
+  const urlS = `${url}?wstoken=${wstoken}&wsfunction=core_user_update_users&users[0][id]=${userId}&users[0][customfields][0][type]=live_quiz_subscription&users[0][customfields][0][value]=${subscription}&users[0][customfields][1][type]=trialexpirydate&users[0][customfields][1][value]=${expiry}&moodlewsrestformat=json`;
   const res = await axios.get(urlS);
   return res.data;
 };
@@ -456,7 +456,7 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
           firstname,
           lastname,
           phone,
-          subscription: "Trail",
+          subscription: "Trial",
           trialExpiry: endTime,
         });
         const uid = user[0].id;
@@ -485,7 +485,7 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
       if (subscription == "NA") {
         try {
           const userId = userExist[0].id;
-          await updateTrailSubscription(userId, "Trail", endTime);
+          await updateTrailSubscription(userId, "Trial", endTime);
           for (i = 0; i < 4; i++) {
             const cid = courseFormat[i][grade];
             await enrolUserToCourse({
@@ -495,7 +495,7 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
               userId,
             });
           }
-          console.log("trail activated");
+          console.log("trial activated");
           return res.status(200).send({
             user: [
               {
@@ -511,7 +511,7 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
             message: "User not found",
           });
         }
-      } else if (subscription == "Trail") {
+      } else if (subscription == "Trial") {
         console.log({ email: userExist[0].email, status: "trialinprogress" });
         return res.status(200).send({
           user: [
@@ -534,7 +534,7 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
           ],
           status: "alreadyapaiduser",
         });
-      } else if (subscription == "Trail Expired") {
+      } else if (subscription == "Trial Expired") {
         return res.status(200).send({
           user: [
             {
