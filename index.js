@@ -1750,9 +1750,9 @@ app.get("/dailySchedule", async (req, res) => {
   }
 });
 
-app.get("/weeklySchedule", async (req, res) => {
+app.post("/weeklySchedule", async (req, res) => {
   try {
-    const phone = req.query.phone;
+    const { phone } = req.body;
     if (phone) {
       const zohoToken = await getZohoToken();
       const zohoConfig = {
