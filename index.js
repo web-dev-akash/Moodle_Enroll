@@ -962,10 +962,13 @@ const updateTagInZoho = async (email) => {
     config
   );
 
+  // console.log("first");
+
   const engagementScore =
-    deal.data.data[0].Engagement_Score != null
-      ? Number(deal.data.data[0].Engagement_Score)
+    dealData.data.data[0].Engagement_Score != null
+      ? Number(dealData.data.data[0].Engagement_Score)
       : 0;
+  console.log(engagementScore);
   let newEngagementScore = engagementScore + 10;
   const dealBody = {
     data: [
@@ -995,7 +998,6 @@ const updateTagInZoho = async (email) => {
 };
 
 const getUserFirstAccess = async (data) => {
-  console.log(data);
   const id = data.userid;
   const loggedinTime = data.timecreated;
   const email = data.other.username;
