@@ -920,10 +920,7 @@ app.post("/captureReferral", async (req, res) => {
   }
 });
 
-const updateTagInZoho = async (phone) => {
-  if (phone.length <= 10) {
-    phone = `91${phone}`;
-  }
+const updateTagInZoho = async (email) => {
   const res = await axios.post(
     `https://accounts.zoho.com/oauth/v2/token?client_id=${CLIENT_ID}&grant_type=refresh_token&client_secret=${CLIENT_SECRET}&refresh_token=${REFRESH_TOKEN}`
   );
@@ -935,7 +932,7 @@ const updateTagInZoho = async (phone) => {
     },
   };
   const contact = await axios.get(
-    `https://www.zohoapis.com/crm/v3/Contacts/search?phone=${phone}`,
+    `https://www.zohoapis.com/crm/v3/Contacts/search?email=${email}`,
     config
   );
   if (!contact.data) {
@@ -998,29 +995,29 @@ const updateTagInZoho = async (phone) => {
 };
 
 const getUserFirstAccess = async (data) => {
+  console.log(data);
   const id = data.userid;
   const loggedinTime = data.timecreated;
+  const email = data.other.username;
   const res = await axios.get(
-    `${URL}?wstoken=${WSTOKEN}&wsfunction=core_user_get_users_by_field&field=id&values[0]=${id}&moodlewsrestformat=json`
+    `${url}?wstoken=${WSTOKEN}&wsfunction=core_user_get_users_by_field&field=id&values[0]=${id}&moodlewsrestformat=json`
   );
+  console.log(res.data);
   const firstaccess = res.data[0].firstaccess;
-  const phone = res.data[0].phone1;
   const loggedDate = new Date(loggedinTime * 1000).toLocaleDateString();
   const firstDate = new Date(firstaccess * 1000).toLocaleDateString();
+  console.log(firstDate, loggedDate);
   if (firstDate == loggedDate) {
-    const loggedTime = new Date(loggedinTime * 1000).toLocaleTimeString();
-    const firstTime = new Date(firstaccess * 1000).toLocaleTimeString();
-    if (loggedTime == firstTime) {
-      const zoho = await updateTagInZoho(phone);
-      return { zoho, status: "firstlogin" };
-    }
+    const zoho = await updateTagInZoho(email);
+    return { zoho, status: "firstlogin" };
   }
   return { status: "notfirstlogin" };
 };
 
 app.post("/firstLogin", async (req, res) => {
   try {
-    const data = await getUserFirstAccess(req.body);
+    const body = req.body;
+    const data = await getUserFirstAccess(body);
     return res.status(200).send({
       data,
     });
