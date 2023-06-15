@@ -962,8 +962,6 @@ const updateTagInZoho = async (email) => {
     config
   );
 
-  // console.log("first");
-
   const engagementScore =
     dealData.data.data[0].Engagement_Score != null
       ? Number(dealData.data.data[0].Engagement_Score)
@@ -1423,10 +1421,7 @@ const updateScoreinZoho = async (email, addScore) => {
 };
 
 const updateStageInZoho = async (email) => {
-  const res = await axios.post(
-    `https://accounts.zoho.com/oauth/v2/token?client_id=${CLIENT_ID}&grant_type=refresh_token&client_secret=${CLIENT_SECRET}&refresh_token=${REFRESH_TOKEN}`
-  );
-  const token = res.data.access_token;
+  const token = await getZohoToken();
   const config = {
     headers: {
       Authorization: `Zoho-oauthtoken ${token}`,
@@ -1483,10 +1478,7 @@ const updateStageInZoho = async (email) => {
 // });
 
 const checkRegularAttendeeTag = async (email) => {
-  const res = await axios.post(
-    `https://accounts.zoho.com/oauth/v2/token?client_id=${CLIENT_ID}&grant_type=refresh_token&client_secret=${CLIENT_SECRET}&refresh_token=${REFRESH_TOKEN}`
-  );
-  const token = res.data.access_token;
+  const token = await getZohoToken();
   const config = {
     headers: {
       Authorization: `Zoho-oauthtoken ${token}`,
@@ -1532,8 +1524,8 @@ const getRegularLogin = async () => {
   const rows = await getSheetData();
   for (let i = 0; i < rows.length; i++) {
     const email = rows[i].c[3].v;
-    const currentDate = new Date().toLocaleDateString();
-    const date = new Date(rows[i].c[4].f).toLocaleDateString();
+    const currentDate = new Date().toDateString();
+    const date = new Date(rows[i].c[4].f).toDateString();
     const sessionid = rows[i].c[5].v;
     const existingUser = aggregatedData.find((user) => user.email === email);
     if (existingUser) {
@@ -1997,55 +1989,46 @@ app.post("/template/totalParticipants", async (req, res) => {
 });
 
 app.post("/loginFailed", async (req, res) => {
-  try {
-    const data = req.body;
-    const email = data.other.username;
-    const zohoToken = await getZohoToken();
-    const zohoConfig = {
-      headers: {
-        Authorization: `Bearer ${zohoToken}`,
-        "Content-Type": "application/json",
-      },
-    };
-    const contact = await axios.get(
-      `https://www.zohoapis.com/crm/v3/Contacts/search?email=${email}`,
-      zohoConfig
-    );
-    if (!contact.data) {
-      return "Not a Zoho Contact";
-    }
-    const contactid = contact.data.data[0].id;
-    const dealData = await axios.get(
-      `https://www.zohoapis.com/crm/v3/Deals/search?criteria=((Contact_Name:equals:${contactid}))`,
-      zohoConfig
-    );
-    if (!dealData.data) {
-      return "Not converted to deal";
-    }
-    const dealid = dealData.data.data[0].id;
-    const body = {
-      tags: [
-        {
-          name: "loginfailed",
-          id: "4878003000001472029",
-          color_code: "#969696",
-        },
-      ],
-    };
-    const updateTag = await axios.post(
-      `https://www.zohoapis.com/crm/v3/Deals/${dealid}/actions/add_tags`,
-      body,
-      zohoConfig
-    );
-
-    return res.send({
-      data: updateTag.data,
-    });
-  } catch (error) {
-    return res.status(500).send({
-      error,
-    });
+  const data = req.body;
+  const email = data.other.username;
+  const zohoToken = await getZohoToken();
+  const zohoConfig = {
+    headers: {
+      Authorization: `Bearer ${zohoToken}`,
+      "Content-Type": "application/json",
+    },
+  };
+  const contact = await axios.get(
+    `https://www.zohoapis.com/crm/v3/Contacts/search?email=${email}`,
+    zohoConfig
+  );
+  if (!contact.data) {
+    return "Not a Zoho Contact";
   }
+  const contactid = contact.data.data[0].id;
+  const dealData = await axios.get(
+    `https://www.zohoapis.com/crm/v3/Deals/search?criteria=((Contact_Name:equals:${contactid}))`,
+    zohoConfig
+  );
+  if (!dealData.data) {
+    return "Not converted to deal";
+  }
+  const dealid = dealData.data.data[0].id;
+  const body = {
+    tags: [
+      {
+        name: "loginfailed",
+        id: "4878003000001472029",
+        color_code: "#969696",
+      },
+    ],
+  };
+  const updateTag = await axios.post(
+    `https://www.zohoapis.com/crm/v3/Deals/${dealid}/actions/add_tags`,
+    body,
+    zohoConfig
+  );
+  return;
 });
 
 app.listen(PORT, () => {
