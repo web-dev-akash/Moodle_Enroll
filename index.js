@@ -201,10 +201,9 @@ const updateScheduleLogsinGoogleSheet = async (phone) => {
     range: "Schedule Logs!A:B", //sheet name and range of cells
     valueInputOption: "USER_ENTERED", // The information will be passed according to what the usere passes in as date, number or text
     resource: {
-      values: [[newPhone, new Date().toLocaleDateString()]],
+      values: [[newPhone, new Date().toDateString()]],
     },
   });
-
   return writeData.data;
 };
 
@@ -1725,9 +1724,9 @@ app.post("/weeklySchedule", async (req, res) => {
           Authorization: `Bearer ${zohoToken}`,
         },
       };
-      await updateScheduleLogsinGoogleSheet(phone);
       const contact = await searchContactInZoho(phone, zohoConfig);
-      if (contact.data) {
+      if (contact.data && contact.data.length > 0) {
+        await updateScheduleLogsinGoogleSheet(phone);
         const contactId = contact.data[0].id;
         await addTagsToContact(contactId, zohoConfig);
         const deal = await searchDealByContact(contactId, zohoConfig);
