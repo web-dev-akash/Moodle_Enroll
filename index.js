@@ -1725,18 +1725,16 @@ app.post("/weeklySchedule", async (req, res) => {
           Authorization: `Bearer ${zohoToken}`,
         },
       };
-
       await updateScheduleLogsinGoogleSheet(phone);
-
       const contact = await searchContactInZoho(phone, zohoConfig);
       if (contact.data) {
         const contactId = contact.data[0].id;
         await addTagsToContact(contactId, zohoConfig);
-      }
-      const deal = await searchDealByContact(contactId, zohoConfig);
-      if (deal.data && deal.data.length > 0) {
-        const dealId = deal.data[0].id;
-        await addTagsToDeal(dealId, zohoConfig);
+        const deal = await searchDealByContact(contactId, zohoConfig);
+        if (deal.data && deal.data.length > 0) {
+          const dealId = deal.data[0].id;
+          await addTagsToDeal(dealId, zohoConfig);
+        }
       }
     }
     const data = await getScheduleFromSheet();
