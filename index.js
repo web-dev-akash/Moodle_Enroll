@@ -1729,12 +1729,10 @@ app.post("/weeklySchedule", async (req, res) => {
       await updateScheduleLogsinGoogleSheet(phone);
 
       const contact = await searchContactInZoho(phone, zohoConfig);
-      if (!contact.data) {
-        return res.status(200).send("Not a Contact in Zoho");
+      if (contact.data) {
+        const contactId = contact.data[0].id;
+        await addTagsToContact(contactId, zohoConfig);
       }
-      const contactId = contact.data[0].id;
-      await addTagsToContact(contactId, zohoConfig);
-
       const deal = await searchDealByContact(contactId, zohoConfig);
       if (deal.data && deal.data.length > 0) {
         const dealId = deal.data[0].id;
