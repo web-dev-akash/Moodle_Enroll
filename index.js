@@ -25,6 +25,7 @@ const courseFormat = [
     G4: "420",
     G5: "421",
     G6: "422",
+    G7: "460",
   },
   {
     // English
@@ -32,6 +33,7 @@ const courseFormat = [
     G4: "424",
     G5: "425",
     G6: "426",
+    G7: "459",
   },
   {
     // Science
@@ -39,6 +41,7 @@ const courseFormat = [
     G4: "427",
     G5: "428",
     G6: "429",
+    G7: "461",
   },
   {
     // GK
@@ -46,6 +49,7 @@ const courseFormat = [
     G4: "430",
     G5: "431",
     G6: "432",
+    G7: "462",
   },
 ];
 
@@ -54,18 +58,22 @@ const allLiveQuizCourses = [
   "420",
   "421",
   "422",
+  "460",
   "452",
   "424",
   "425",
   "426",
+  "459",
   "456",
   "427",
   "428",
   "429",
+  "461",
   "457",
   "430",
   "431",
   "432",
+  "462",
 ];
 const wstoken = process.env.WSTOKEN;
 const wsfunctionCreate = "core_user_create_users";
@@ -447,6 +455,10 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
       grade = "G4";
     } else if (student_grade.includes("5")) {
       grade = "G5";
+    } else if (student_grade.includes("6")) {
+      grade = "G6";
+    } else if (student_grade.includes("7")) {
+      grade = "G7";
     }
     const userExist = await getExistingUser(email);
     let { startTime, endTime } = getTrailTime();
@@ -601,6 +613,10 @@ app.post("/enrolPaidUser", authMiddleware, async (req, res) => {
     grade = "G4";
   } else if (student_grade.includes("5")) {
     grade = "G5";
+  } else if (student_grade.includes("6")) {
+    grade = "G6";
+  } else if (student_grade.includes("7")) {
+    grade = "G7";
   } else {
     return res.status(404).send({
       status: "error",
@@ -1239,7 +1255,7 @@ app.get("/reports", async (req, res) => {
     const email = req.query.email;
     console.log("first");
     await updateTagBasedOnSessionAttepted(email);
-    const grades = [3, 4, 5];
+    const grades = [3, 4, 5, 6, 7];
     const percentArray = [];
     const rows = await getSheetData();
     console.log("second");
