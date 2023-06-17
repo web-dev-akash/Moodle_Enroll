@@ -1518,6 +1518,56 @@ const checkRegularAttendeeTag = async (email, token) => {
   return updateTag.data;
 };
 
+const updateNumberOfClasses = async (email, token, totalClasses) => {
+  const config = {
+    headers: {
+      Authorization: `Zoho-oauthtoken ${token}`,
+      "Content-Type": "application/json",
+    },
+  };
+  const contactData = await axios.get(
+    `https://www.zohoapis.com/crm/v3/Contacts/search?email=${email}`,
+    config
+  );
+  if (!contactData.data) {
+    return "Not a Zoho Contact";
+  }
+
+  const contactid = contactData.data.data[0].id;
+  const dealData = await axios.get(
+    `https://www.zohoapis.com/crm/v3/Deals/search?criteria=Contact_Name:equals:${contactid}`,
+    config
+  );
+  if (!dealData.data) {
+    return "Not converted to deal";
+  }
+  const dealid = dealData.data.data[0].id;
+  const body = {
+    data: [
+      {
+        id: dealid,
+        No_of_quizzes_attempted: totalClasses,
+        $append_values: {
+          No_of_quizzes_attempted: true,
+        },
+      },
+    ],
+    duplicate_check_fields: ["id"],
+    apply_feature_execution: [
+      {
+        name: "layout_rules",
+      },
+    ],
+    trigger: ["workflow"],
+  };
+  const deal = await axios.post(
+    `https://www.zohoapis.com/crm/v3/Deals/upsert`,
+    body,
+    config
+  );
+  return deal.data;
+};
+
 const getRegularLogin = async () => {
   const aggregatedData = [];
   const rows = await getSheetData();
@@ -1567,6 +1617,7 @@ const getRegularLogin = async () => {
   const score = [2, 3, 5, 10, 20];
   const token = await getZohoToken();
   aggregatedData.map(async (user) => {
+    await updateNumberOfClasses(user.email, token, user.sessions.length);
     if (user.sessions.length == 1) {
       await updateStageInZoho(user.email, token);
       await updateScoreinZoho(user.email, 2, token);
@@ -1580,6 +1631,7 @@ const getRegularLogin = async () => {
       await updateScoreinZoho(user.email, addScore, token);
     }
   });
+
   return "Success";
 };
 
