@@ -21,6 +21,7 @@ const cron = require("node-cron");
 const courseFormat = [
   {
     // Math
+    G2: "466",
     G3: "453",
     G4: "420",
     G5: "421",
@@ -29,6 +30,7 @@ const courseFormat = [
   },
   {
     // English
+    G2: "463",
     G3: "452",
     G4: "424",
     G5: "425",
@@ -37,6 +39,7 @@ const courseFormat = [
   },
   {
     // Science
+    G2: "465",
     G3: "456",
     G4: "427",
     G5: "428",
@@ -45,7 +48,8 @@ const courseFormat = [
   },
   {
     // GK
-    G3: "457",
+    G3: "464",
+    G2: "453",
     G4: "430",
     G5: "431",
     G6: "432",
@@ -1255,7 +1259,7 @@ app.get("/reports", async (req, res) => {
     const email = req.query.email;
     console.log("first");
     await updateTagBasedOnSessionAttepted(email);
-    const grades = [3, 4, 5, 6, 7];
+    const grades = [2, 3, 4, 5, 6, 7];
     const percentArray = [];
     const rows = await getSheetData();
     console.log("second");
