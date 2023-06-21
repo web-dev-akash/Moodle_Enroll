@@ -48,8 +48,8 @@ const courseFormat = [
   },
   {
     // GK
-    G3: "464",
-    G2: "453",
+    G2: "464",
+    G3: "457",
     G4: "430",
     G5: "431",
     G6: "432",
@@ -463,6 +463,8 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
       grade = "G6";
     } else if (student_grade.includes("7")) {
       grade = "G7";
+    } else if (student_grade.includes("2")) {
+      grade = "G2";
     }
     const userExist = await getExistingUser(email);
     let { startTime, endTime } = getTrailTime();
@@ -621,6 +623,8 @@ app.post("/enrolPaidUser", authMiddleware, async (req, res) => {
     grade = "G6";
   } else if (student_grade.includes("7")) {
     grade = "G7";
+  } else if (student_grade.includes("2")) {
+    grade = "G2";
   } else {
     return res.status(404).send({
       status: "error",
