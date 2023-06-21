@@ -1538,7 +1538,10 @@ const checkRegularAttendeeTag = async (email, token) => {
   return updateTag.data;
 };
 
-const updateNumberOfClasses = async (email, token, totalClasses) => {
+const updateNumberOfClasses = async (email, token, totalClasses, lastClass) => {
+  const date = new Date(lastClass * 1000).toLocaleDateString().split("/");
+  const month = date[1].length == 1 ? `0${date[1]}` : `${date[1]}`;
+  const lastAccess = `${date[2]}-${month}-${date[0]}`;
   const config = {
     headers: {
       Authorization: `Zoho-oauthtoken ${token}`,
@@ -1567,8 +1570,10 @@ const updateNumberOfClasses = async (email, token, totalClasses) => {
       {
         id: dealid,
         No_of_quizzes_attempted: totalClasses,
+        Last_Quiz_Attempt_Date: lastAccess,
         $append_values: {
           No_of_quizzes_attempted: true,
+          Last_Quiz_Attempt_Date: true,
         },
       },
     ],
@@ -1593,6 +1598,8 @@ const getRegularLogin = async () => {
   const rows = await getSheetData();
   for (let i = 0; i < rows.length; i++) {
     const email = rows[i].c[3].v;
+    const timeS = new Date(rows[i].c[4].f);
+    const timestamp = Math.floor(timeS / 1000);
     const currentDate = new Date().toDateString();
     const date = new Date(rows[i].c[4].f).toDateString();
     const sessionid = rows[i].c[5].v;
@@ -1604,10 +1611,12 @@ const getRegularLogin = async () => {
       date == currentDate &&
         existingUser.currentDate.push({
           date: currentDate,
+          timestamp,
         });
       date < currentDate &&
         existingUser.prevDate.push({
           date: date,
+          timestamp,
         });
     } else {
       const newUser = {
@@ -1620,6 +1629,7 @@ const getRegularLogin = async () => {
         prevDate: [
           {
             date: date,
+            timestamp,
           },
         ],
         sessions: [
@@ -1632,24 +1642,41 @@ const getRegularLogin = async () => {
     }
   }
 
+  // const newData = [];
+  // for (let i = 0; i < aggregatedData.length; i++) {
+  //   const data = aggregatedData[i].prevDate;
+  //   data.sort((a, b) => b.timestamp - a.timestamp);
+  //   newData.push({ ...aggregatedData[i], prevDate: data });
+  // }
+
+  const newData = aggregatedData.map((res) => {
+    const data = res.prevDate.sort((a, b) => b.timestamp - a.timestamp);
+    aggregatedData.prevDate = data;
+  });
   // return aggregatedData;
 
   const score = [2, 3, 5, 10, 20];
   const token = await getZohoToken();
-  aggregatedData.map(async (user) => {
-    await updateNumberOfClasses(user.email, token, user.sessions.length);
-    if (user.sessions.length == 1) {
-      await updateStageInZoho(user.email, token);
-      await updateScoreinZoho(user.email, 2, token);
-    } else if (user.sessions.length > 1 && user.sessions.length <= 5) {
-      const current = user.sessions.length - user.prevDate.length;
-      await checkRegularAttendeeTag(user.email, token);
-      let addScore = 0;
-      for (i = 0; i < current; i++) {
-        addScore += score[user.prevDate.length + i];
-      }
-      await updateScoreinZoho(user.email, addScore, token);
-    }
+  aggregatedData.map(async (user, index) => {
+    index === 0 &&
+      (await updateNumberOfClasses(
+        "vinitavashisht0123@gmail.com",
+        token,
+        user.sessions.length,
+        user.prevDate[0].timestamp
+      ));
+    //   if (user.sessions.length == 1) {
+    //     await updateStageInZoho(user.email, token);
+    //     await updateScoreinZoho(user.email, 2, token);
+    //   } else if (user.sessions.length > 1 && user.sessions.length <= 5) {
+    //     const current = user.sessions.length - user.prevDate.length;
+    //     await checkRegularAttendeeTag(user.email, token);
+    //     let addScore = 0;
+    //     for (i = 0; i < current; i++) {
+    //       addScore += score[user.prevDate.length + i];
+    //     }
+    //     await updateScoreinZoho(user.email, addScore, token);
+    //   }
   });
 
   return "Success";
