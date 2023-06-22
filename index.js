@@ -16,7 +16,6 @@ const CLIENT_SECRET = process.env.CLIENT_SECRET;
 const REFRESH_TOKEN = process.env.REFRESH_TOKEN;
 const AUTH_TOKEN = process.env.AUTH_TOKEN;
 const PORT = process.env.PORT || 8080;
-const cron = require("node-cron");
 
 const courseFormat = [
   {
@@ -1266,6 +1265,7 @@ app.get("/reports", async (req, res) => {
     const grades = [2, 3, 4, 5, 6, 7];
     const percentArray = [];
     const rows = await getSheetData();
+    // return res.send({ rows });
     console.log("second");
     const aggregatedData = [];
     for (let i = 0; i < rows.length; i++) {
@@ -1276,7 +1276,6 @@ app.get("/reports", async (req, res) => {
         const polled = rows[i].c[7].v;
         const sessionid = rows[i].c[5].v;
         const grade = Number(rows[i].c[8].v.substring(6, 7));
-        i === 0 && console.log(grade);
         const name =
           rows[i].c[1] !== null
             ? `${rows[i].c[0].v} ${rows[i].c[1].v}`
@@ -1303,6 +1302,7 @@ app.get("/reports", async (req, res) => {
         }
       }
     }
+    console.log("Third");
     for (let i = 0; i < aggregatedData.length; i++) {
       const email = aggregatedData[i].email;
       const correct = aggregatedData[i].correct;
@@ -1323,6 +1323,7 @@ app.get("/reports", async (req, res) => {
         sessionid,
       });
     }
+    console.log("four");
     const sortedPercentArray = percentArray.sort(
       (a, b) => a.percent - b.percent
     );
@@ -1361,7 +1362,7 @@ app.get("/reports", async (req, res) => {
       }
       finalData.push(...percentileArray);
     }
-    console.log("four");
+    console.log("five");
     const user = finalData.filter((value) => {
       return value.email.trim() == email.trim();
     });
@@ -1373,7 +1374,7 @@ app.get("/reports", async (req, res) => {
       });
     }
     await updateReportLogsinGoogleSheet(user);
-    console.log("five");
+    console.log("six");
     return res.status(200).send({
       user,
     });
@@ -1662,27 +1663,25 @@ const getRegularLogin = async () => {
   const score = [2, 3, 5, 10, 20];
   const token = await getZohoToken();
   aggregatedData.map(async (user, index) => {
-    index === 0 &&
-      (await updateNumberOfClasses(
-        "vinitavashisht0123@gmail.com",
-        token,
-        user.sessions.length,
-        user.prevDate[0].timestamp
-      ));
-    //   if (user.sessions.length == 1) {
-    //     await updateStageInZoho(user.email, token);
-    //     await updateScoreinZoho(user.email, 2, token);
-    //   } else if (user.sessions.length > 1 && user.sessions.length <= 5) {
-    //     const current = user.sessions.length - user.prevDate.length;
-    //     await checkRegularAttendeeTag(user.email, token);
-    //     let addScore = 0;
-    //     for (i = 0; i < current; i++) {
-    //       addScore += score[user.prevDate.length + i];
-    //     }
-    //     await updateScoreinZoho(user.email, addScore, token);
-    //   }
+    await updateNumberOfClasses(
+      user.email,
+      token,
+      user.sessions.length,
+      user.prevDate[0].timestamp
+    );
+    if (user.sessions.length == 1) {
+      await updateStageInZoho(user.email, token);
+      await updateScoreinZoho(user.email, 2, token);
+    } else if (user.sessions.length > 1 && user.sessions.length <= 5) {
+      const current = user.sessions.length - user.prevDate.length;
+      await checkRegularAttendeeTag(user.email, token);
+      let addScore = 0;
+      for (i = 0; i < current; i++) {
+        addScore += score[user.prevDate.length + i];
+      }
+      await updateScoreinZoho(user.email, addScore, token);
+    }
   });
-
   return "Success";
 };
 
