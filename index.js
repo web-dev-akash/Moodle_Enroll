@@ -2163,6 +2163,14 @@ app.post("/loginFailed", async (req, res) => {
   return;
 });
 
+app.post("/numberFormatter", (req, res) => {
+  const { phone } = req.body;
+  const data = phone.substring(2, phone.length);
+  res.send({
+    data,
+  });
+});
+
 app.listen(PORT, () => {
   console.log("Server Started 🎈🎈");
 });
