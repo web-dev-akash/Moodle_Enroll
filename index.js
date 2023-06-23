@@ -16,11 +16,11 @@ const CLIENT_SECRET = process.env.CLIENT_SECRET;
 const REFRESH_TOKEN = process.env.REFRESH_TOKEN;
 const AUTH_TOKEN = process.env.AUTH_TOKEN;
 const PORT = process.env.PORT || 8080;
-const cron = require("node-cron");
 
 const courseFormat = [
   {
     // Math
+    G2: "466",
     G3: "453",
     G4: "420",
     G5: "421",
@@ -29,6 +29,7 @@ const courseFormat = [
   },
   {
     // English
+    G2: "463",
     G3: "452",
     G4: "424",
     G5: "425",
@@ -37,6 +38,7 @@ const courseFormat = [
   },
   {
     // Science
+    G2: "465",
     G3: "456",
     G4: "427",
     G5: "428",
@@ -45,6 +47,7 @@ const courseFormat = [
   },
   {
     // GK
+    G2: "464",
     G3: "457",
     G4: "430",
     G5: "431",
@@ -459,6 +462,8 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
       grade = "G6";
     } else if (student_grade.includes("7")) {
       grade = "G7";
+    } else if (student_grade.includes("2")) {
+      grade = "G2";
     }
     const userExist = await getExistingUser(email);
     let { startTime, endTime } = getTrailTime();
@@ -617,6 +622,8 @@ app.post("/enrolPaidUser", authMiddleware, async (req, res) => {
     grade = "G6";
   } else if (student_grade.includes("7")) {
     grade = "G7";
+  } else if (student_grade.includes("2")) {
+    grade = "G2";
   } else {
     return res.status(404).send({
       status: "error",
@@ -1255,9 +1262,10 @@ app.get("/reports", async (req, res) => {
     const email = req.query.email;
     console.log("first");
     await updateTagBasedOnSessionAttepted(email);
-    const grades = [3, 4, 5, 6, 7];
+    const grades = [2, 3, 4, 5, 6, 7];
     const percentArray = [];
     const rows = await getSheetData();
+    // return res.send({ rows });
     console.log("second");
     const aggregatedData = [];
     for (let i = 0; i < rows.length; i++) {
@@ -1268,7 +1276,6 @@ app.get("/reports", async (req, res) => {
         const polled = rows[i].c[7].v;
         const sessionid = rows[i].c[5].v;
         const grade = Number(rows[i].c[8].v.substring(6, 7));
-        i === 0 && console.log(grade);
         const name =
           rows[i].c[1] !== null
             ? `${rows[i].c[0].v} ${rows[i].c[1].v}`
@@ -1295,6 +1302,7 @@ app.get("/reports", async (req, res) => {
         }
       }
     }
+    console.log("Third");
     for (let i = 0; i < aggregatedData.length; i++) {
       const email = aggregatedData[i].email;
       const correct = aggregatedData[i].correct;
@@ -1315,6 +1323,7 @@ app.get("/reports", async (req, res) => {
         sessionid,
       });
     }
+    console.log("four");
     const sortedPercentArray = percentArray.sort(
       (a, b) => a.percent - b.percent
     );
@@ -1353,7 +1362,7 @@ app.get("/reports", async (req, res) => {
       }
       finalData.push(...percentileArray);
     }
-    console.log("four");
+    console.log("five");
     const user = finalData.filter((value) => {
       return value.email.trim() == email.trim();
     });
@@ -1365,7 +1374,7 @@ app.get("/reports", async (req, res) => {
       });
     }
     await updateReportLogsinGoogleSheet(user);
-    console.log("five");
+    console.log("six");
     return res.status(200).send({
       user,
     });
@@ -1594,7 +1603,10 @@ const checkRegularAttendeeTag = async (email, token) => {
   return updateTag.data;
 };
 
-const updateNumberOfClasses = async (email, token, totalClasses) => {
+const updateNumberOfClasses = async (email, token, totalClasses, lastClass) => {
+  const date = new Date(lastClass * 1000).toLocaleDateString().split("/");
+  const month = date[1].length == 1 ? `0${date[1]}` : `${date[1]}`;
+  const lastAccess = `${date[2]}-${month}-${date[0]}`;
   const config = {
     headers: {
       Authorization: `Zoho-oauthtoken ${token}`,
@@ -1623,8 +1635,10 @@ const updateNumberOfClasses = async (email, token, totalClasses) => {
       {
         id: dealid,
         No_of_quizzes_attempted: totalClasses,
+        Last_Quiz_Attempt_Date: lastAccess,
         $append_values: {
           No_of_quizzes_attempted: true,
+          Last_Quiz_Attempt_Date: true,
         },
       },
     ],
@@ -1649,6 +1663,8 @@ const getRegularLogin = async () => {
   const rows = await getSheetData();
   for (let i = 0; i < rows.length; i++) {
     const email = rows[i].c[3].v;
+    const timeS = new Date(rows[i].c[4].f);
+    const timestamp = Math.floor(timeS / 1000);
     const currentDate = new Date().toDateString();
     const date = new Date(rows[i].c[4].f).toDateString();
     const sessionid = rows[i].c[5].v;
@@ -1660,10 +1676,12 @@ const getRegularLogin = async () => {
       date == currentDate &&
         existingUser.currentDate.push({
           date: currentDate,
+          timestamp,
         });
       date < currentDate &&
         existingUser.prevDate.push({
           date: date,
+          timestamp,
         });
     } else {
       const newUser = {
@@ -1676,6 +1694,7 @@ const getRegularLogin = async () => {
         prevDate: [
           {
             date: date,
+            timestamp,
           },
         ],
         sessions: [
@@ -1688,12 +1707,28 @@ const getRegularLogin = async () => {
     }
   }
 
+  // const newData = [];
+  // for (let i = 0; i < aggregatedData.length; i++) {
+  //   const data = aggregatedData[i].prevDate;
+  //   data.sort((a, b) => b.timestamp - a.timestamp);
+  //   newData.push({ ...aggregatedData[i], prevDate: data });
+  // }
+
+  const newData = aggregatedData.map((res) => {
+    const data = res.prevDate.sort((a, b) => b.timestamp - a.timestamp);
+    aggregatedData.prevDate = data;
+  });
   // return aggregatedData;
 
   const score = [2, 3, 5, 10, 20];
   const token = await getZohoToken();
-  aggregatedData.map(async (user) => {
-    await updateNumberOfClasses(user.email, token, user.sessions.length);
+  aggregatedData.map(async (user, index) => {
+    await updateNumberOfClasses(
+      user.email,
+      token,
+      user.sessions.length,
+      user.prevDate[0].timestamp
+    );
     if (user.sessions.length == 1) {
       await updateStageInZoho(user.email, token);
       await checkFirstQuizAttemptedTag(user.email, token);
