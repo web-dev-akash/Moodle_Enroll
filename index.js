@@ -1485,12 +1485,72 @@ const updateStageInZoho = async (email, token) => {
   return deal.data;
 };
 
-// app.get("/test", async (req, res) => {
-//   const data = await updateStageInZoho("rajtosh@gmail.com");
-//   res.send({
-//     data,
-//   });
-// });
+const getZohoTags = async (module, token) => {
+  try {
+    const config = {
+      headers: {
+        Authorization: `Zoho-oauthtoken ${token}`,
+        "Content-Type": "application/json",
+      },
+    };
+    const tags = await axios.get(
+      `https://www.zohoapis.com/crm/v3/settings/tags?module=${module}`,
+      config
+    );
+    return tags.data;
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+app.get("/tags", async (req, res) => {
+  const data = await getZohoTags("Deals", await getZohoToken());
+  res.send({
+    data,
+  });
+});
+
+const checkFirstQuizAttemptedTag = async (email, token) => {
+  const config = {
+    headers: {
+      Authorization: `Zoho-oauthtoken ${token}`,
+      "Content-Type": "application/json",
+    },
+  };
+  const contact = await axios.get(
+    `https://www.zohoapis.com/crm/v3/Contacts/search?email=${email}`,
+    config
+  );
+  if (!contact.data) {
+    return "Not a Zoho Contact";
+  }
+  console.log(contact.id);
+  const contactid = contact.data.data[0].id;
+  const dealData = await axios.get(
+    `https://www.zohoapis.com/crm/v3/Deals/search?criteria=Contact_Name:equals:${contactid}`,
+    config
+  );
+  if (!dealData.data) {
+    return "Not converted to deal";
+  }
+  // console.log(dealData.data);
+  const dealid = dealData.data.data[0].id;
+  const body = {
+    tags: [
+      {
+        name: "firstquizattended",
+        id: "4878003000002001115",
+        color_code: "#FD87BD",
+      },
+    ],
+  };
+  const updateTag = await axios.post(
+    `https://www.zohoapis.com/crm/v3/Deals/${dealid}/actions/add_tags`,
+    body,
+    config
+  );
+  return updateTag.data;
+};
 
 const checkRegularAttendeeTag = async (email, token) => {
   const config = {
@@ -1636,6 +1696,7 @@ const getRegularLogin = async () => {
     await updateNumberOfClasses(user.email, token, user.sessions.length);
     if (user.sessions.length == 1) {
       await updateStageInZoho(user.email, token);
+      await checkFirstQuizAttemptedTag(user.email, token);
       await updateScoreinZoho(user.email, 2, token);
     } else if (user.sessions.length > 1 && user.sessions.length <= 5) {
       const current = user.sessions.length - user.prevDate.length;
@@ -1647,7 +1708,6 @@ const getRegularLogin = async () => {
       await updateScoreinZoho(user.email, addScore, token);
     }
   });
-
   return "Success";
 };
 
