@@ -1593,6 +1593,11 @@ const checkRegularAttendeeTag = async (email, token) => {
         id: "4878003000000773058",
         color_code: "#FEDA62",
       },
+      {
+        name: "secondquizattended",
+        id: "4878003000002033083",
+        color_code: "#D297EE",
+      },
     ],
   };
   const updateTag = await axios.post(
@@ -1678,7 +1683,7 @@ const getRegularLogin = async () => {
           date: currentDate,
           timestamp,
         });
-      date < currentDate &&
+      date != currentDate &&
         existingUser.prevDate.push({
           date: date,
           timestamp,
@@ -1714,11 +1719,11 @@ const getRegularLogin = async () => {
   //   newData.push({ ...aggregatedData[i], prevDate: data });
   // }
 
-  const newData = aggregatedData.map((res) => {
+  aggregatedData.map((res) => {
     const data = res.prevDate.sort((a, b) => b.timestamp - a.timestamp);
     aggregatedData.prevDate = data;
   });
-  // return aggregatedData;
+  return aggregatedData;
 
   const score = [2, 3, 5, 10, 20];
   const token = await getZohoToken();
@@ -1733,6 +1738,14 @@ const getRegularLogin = async () => {
       await updateStageInZoho(user.email, token);
       await checkFirstQuizAttemptedTag(user.email, token);
       await updateScoreinZoho(user.email, 2, token);
+    } else if (
+      user.sessions.length == 2 &&
+      user.prevDate.length == 1 &&
+      user.prevDate[0].timestamp === user.currentDate[1].timestamp
+    ) {
+      await updateStageInZoho(user.email, token);
+      await checkFirstQuizAttemptedTag(user.email, token);
+      await updateScoreinZoho(user.email, 5, token);
     } else if (user.sessions.length > 1 && user.sessions.length <= 5) {
       const current = user.sessions.length - user.prevDate.length;
       await checkRegularAttendeeTag(user.email, token);
