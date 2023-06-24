@@ -1723,7 +1723,6 @@ const getRegularLogin = async () => {
     const data = res.prevDate.sort((a, b) => b.timestamp - a.timestamp);
     aggregatedData.prevDate = data;
   });
-  return aggregatedData;
 
   const score = [2, 3, 5, 10, 20];
   const token = await getZohoToken();
