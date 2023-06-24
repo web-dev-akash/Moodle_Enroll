@@ -150,9 +150,9 @@ const getWeeklySchedule = async (url, wstoken) => {
   return eventsOfTheWeek.flat();
 };
 
-const getExistingUser = async (username) => {
+const getExistingUser = async (email) => {
   const res = await axios.get(
-    `${url}?wstoken=${wstoken}&&wsfunction=core_user_get_users_by_field&field=username&values[0]=${username}&moodlewsrestformat=json`
+    `${url}?wstoken=${wstoken}&&wsfunction=core_user_get_users_by_field&field=email&values[0]=${email}&moodlewsrestformat=json`
   );
   return res.data;
 };
@@ -441,6 +441,7 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
       phone = phone.substring(phone.length - 10, phone.length);
     }
     email = email.toLowerCase();
+    console.log(email);
     const firstname = student_name.split(" ")[0];
     let lastname = "";
     if (student_name.split(" ").length == 1) {
@@ -519,7 +520,7 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
               {
                 id: userExist[0].id,
                 username: userExist[0].email,
-                password: phone,
+                password: "wise@123",
               },
             ],
             status: "trialactivated",
@@ -536,7 +537,7 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
             {
               id: userExist[0].id,
               username: userExist[0].email,
-              password: phone,
+              password: "wise@123",
             },
           ],
           status: "trialinprogress",
@@ -547,7 +548,7 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
             {
               id: userExist[0].id,
               username: userExist[0].email,
-              password: phone,
+              password: "wise@123",
             },
           ],
           status: "alreadyapaiduser",
@@ -558,7 +559,7 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
             {
               id: userExist[0].id,
               username: userExist[0].email,
-              password: phone,
+              password: "wise@123",
             },
           ],
           status: "trialexpired",
@@ -569,7 +570,7 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
             {
               id: userExist[0].id,
               username: userExist[0].email,
-              password: phone,
+              password: "wise@123",
             },
           ],
           status: "subscriptionexpired",
