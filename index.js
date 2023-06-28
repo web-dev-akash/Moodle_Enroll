@@ -600,6 +600,59 @@ app.post("/getUserId", authMiddleware, async (req, res) => {
   }
 });
 
+const markEnrolledonZoho = async (email) => {
+  const token = await getZohoToken();
+  const config = {
+    headers: {
+      Authorization: `Zoho-oauthtoken ${token}`,
+      "Content-Type": "application/json",
+    },
+  };
+  const contact = await axios.get(
+    `https://www.zohoapis.com/crm/v3/Contacts/search?email=${email}`,
+    config
+  );
+  if (!contact.data) {
+    return "Not a Zoho Contact";
+  }
+  console.log("contact", contact.data);
+  const contactid = contact.data.data[0].id;
+  const dealData = await axios.get(
+    `https://www.zohoapis.com/crm/v3/Deals/search?criteria=Contact_Name:equals:${contactid}`,
+    config
+  );
+  if (!dealData.data) {
+    return "Not converted to deal";
+  }
+  console.log("dealData", dealData.data);
+  const dealid = dealData.data.data[0].id;
+  const body = {
+    data: [
+      {
+        id: dealid,
+        Stage: "Enrolled",
+        $append_values: {
+          Stage: true,
+        },
+      },
+    ],
+    duplicate_check_fields: ["id"],
+    apply_feature_execution: [
+      {
+        name: "layout_rules",
+      },
+    ],
+    trigger: ["workflow"],
+  };
+  const deal = await axios.post(
+    `https://www.zohoapis.com/crm/v3/Deals/upsert`,
+    body,
+    config
+  );
+  console.log("upsert", deal.data);
+  return deal.data;
+};
+
 const updatePaidSubscription = async (userid, endTime) => {
   const urlS = `${url}?wstoken=${wstoken}&wsfunction=core_user_update_users&users[0][id]=${userid}&users[0][customfields][0][type]=subscriptionexpirydate&users[0][customfields][0][value]=${endTime}&moodlewsrestformat=json`;
   const res = await axios.get(urlS);
@@ -608,7 +661,7 @@ const updatePaidSubscription = async (userid, endTime) => {
 
 app.post("/enrolPaidUser", authMiddleware, async (req, res) => {
   const { list_of_subjects, student_grade, email } = req.body;
-
+  await markEnrolledonZoho(email);
   const user = await getExistingUser(email);
   const userId = user[0].id;
   const { startTime, endTime } = getPaidTime();
