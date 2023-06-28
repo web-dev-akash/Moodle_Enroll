@@ -632,7 +632,7 @@ app.post("/enrolPaidUser", authMiddleware, async (req, res) => {
     });
   }
   await updatePaidSubscription(userId, endTime);
-  if (list_of_subjects == "Math") {
+  if (list_of_subjects == "Mathematics") {
     try {
       const cid = courseFormat[0][grade];
       const data = await enrolUserToCourse({
@@ -686,7 +686,7 @@ app.post("/enrolPaidUser", authMiddleware, async (req, res) => {
         error,
       });
     }
-  } else if (list_of_subjects == "GK") {
+  } else if (list_of_subjects == "General Knowledge") {
     try {
       const cid = courseFormat[3][grade];
       await enrolUserToCourse({
