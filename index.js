@@ -1776,8 +1776,8 @@ const getRegularLogin = async () => {
   const score = [2, 3, 5, 10, 20];
 
   aggregatedData.map(async (user) => {
-    const length = user.currentDate.length;
-    if (length > 1 && user.currentDate.date == todaysDate) {
+    // const length = user.currentDate.length;
+    if (length > 1 && user.currentDate[1].date == todaysDate) {
       // console.log(user.email);
       await updateNumberOfClasses(
         user.email,
