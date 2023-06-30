@@ -1776,14 +1776,14 @@ const getRegularLogin = async () => {
   const score = [2, 3, 5, 10, 20];
 
   aggregatedData.map(async (user) => {
-    // const length = user.currentDate.length;
+    const length = user.currentDate.length;
     if (length > 1 && user.currentDate[1].date == todaysDate) {
       // console.log(user.email);
       await updateNumberOfClasses(
         user.email,
         token,
         user.sessions.length,
-        user.prevDate[0].timestamp
+        user.currentDate[1].timestamp
       );
       if (user.sessions.length >= 1) {
         await updateStageInZoho(user.email, token);
