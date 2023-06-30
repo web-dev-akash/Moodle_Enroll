@@ -1510,7 +1510,7 @@ const updateStageInZoho = async (email, token) => {
   if (!contact.data) {
     return "Not a Zoho Contact";
   }
-  console.log("contact", contact.data);
+  // console.log("contact", contact.data);
   const contactid = contact.data.data[0].id;
   const dealData = await axios.get(
     `https://www.zohoapis.com/crm/v3/Deals/search?criteria=Contact_Name:equals:${contactid}`,
@@ -1519,34 +1519,46 @@ const updateStageInZoho = async (email, token) => {
   if (!dealData.data) {
     return "Not converted to deal";
   }
-  console.log("dealData", dealData.data);
+  // console.log("dealData", dealData.data);
+  const stage = dealData.data.data[0].Stage;
   const dealid = dealData.data.data[0].id;
-  const body = {
-    data: [
-      {
-        id: dealid,
-        Stage: "Attendee",
-        $append_values: {
-          Stage: true,
+  if (stage === "Trial") {
+    const body = {
+      data: [
+        {
+          id: dealid,
+          Stage: "Attendee",
+          $append_values: {
+            Stage: true,
+          },
         },
-      },
-    ],
-    duplicate_check_fields: ["id"],
-    apply_feature_execution: [
-      {
-        name: "layout_rules",
-      },
-    ],
-    trigger: ["workflow"],
-  };
-  const deal = await axios.post(
-    `https://www.zohoapis.com/crm/v3/Deals/upsert`,
-    body,
-    config
-  );
-  console.log("upsert", deal.data);
-  return deal.data;
+      ],
+      duplicate_check_fields: ["id"],
+      apply_feature_execution: [
+        {
+          name: "layout_rules",
+        },
+      ],
+      trigger: ["workflow"],
+    };
+    const deal = await axios.post(
+      `https://www.zohoapis.com/crm/v3/Deals/upsert`,
+      body,
+      config
+    );
+    console.log("upsert", deal.data);
+    return deal.data;
+  }
+  return "Already Attendee";
 };
+
+app.get("/dealInfo", async (req, res) => {
+  const token = await getZohoToken();
+  const data = await updateStageInZoho("akash1.wisechamps@gmail.com", token);
+  res.send({
+    data,
+  });
+});
 
 const getZohoTags = async (module, token) => {
   try {
