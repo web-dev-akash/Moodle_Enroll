@@ -783,6 +783,55 @@ app.post("/enrolPaidUser", authMiddleware, async (req, res) => {
   }
 });
 
+app.post("/enrolPaidUserThreeMonths", authMiddleware, async (req, res) => {
+  const { student_grade, email } = req.body;
+  let end = new Date();
+  end.setHours(23, 59, 59, 999);
+  let endTime = Math.floor(end.valueOf() / 1000) + 7889400;
+  const { startTime } = getPaidTime();
+  await markEnrolledonZoho(email);
+  const user = await getExistingUser(email);
+  const userId = user[0].id;
+  let grade = "";
+  if (student_grade.includes("3")) {
+    grade = "G3";
+  } else if (student_grade.includes("4")) {
+    grade = "G4";
+  } else if (student_grade.includes("5")) {
+    grade = "G5";
+  } else if (student_grade.includes("6")) {
+    grade = "G6";
+  } else if (student_grade.includes("7")) {
+    grade = "G7";
+  } else if (student_grade.includes("2")) {
+    grade = "G2";
+  } else {
+    return res.status(404).send({
+      status: "error",
+      message: "Course not found",
+    });
+  }
+  await updatePaidSubscription(userId, endTime);
+  try {
+    for (i = 0; i < 4; i++) {
+      const cid = courseFormat[i][grade];
+      await enrolUserToCourse({
+        courseId: cid,
+        timeStart: startTime,
+        timeEnd: endTime,
+        userId,
+      });
+    }
+    return res.status(200).send({
+      status: "success",
+    });
+  } catch (error) {
+    return res.status(500).send({
+      error,
+    });
+  }
+});
+
 const linkShortner = async (url) => {
   const config = {
     headers: {
