@@ -1676,8 +1676,11 @@ const checkRegularAttendeeTag = async (email, token) => {
 
 const updateNumberOfClasses = async (email, token, totalClasses, lastClass) => {
   const date = new Date(lastClass * 1000).toLocaleDateString().split("/");
+  console.log(date);
   const month = date[1].length == 1 ? `0${date[1]}` : `${date[1]}`;
-  const lastAccess = `${date[2]}-${month}-${date[0]}`;
+  const day = date[0].length == 1 ? `0${date[0]}` : `${date[0]}`;
+  const lastAccess = `${date[2]}-${month}-${day}`;
+  console.log(lastAccess);
   const config = {
     headers: {
       Authorization: `Zoho-oauthtoken ${token}`,
@@ -1786,6 +1789,8 @@ const getRegularLogin = async () => {
   });
 
   const score = [2, 3, 5, 10, 20];
+
+  // return aggregatedData;
 
   aggregatedData.map(async (user) => {
     const length = user.currentDate.length;
