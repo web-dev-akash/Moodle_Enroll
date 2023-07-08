@@ -20,7 +20,7 @@ const PORT = process.env.PORT || 8080;
 const courseFormat = [
   {
     // Math
-    G1: "",
+    G1: "473",
     G2: "466",
     G3: "453",
     G4: "420",
@@ -30,7 +30,7 @@ const courseFormat = [
   },
   {
     // English
-    G1: "",
+    G1: "472",
     G2: "463",
     G3: "452",
     G4: "424",
@@ -40,7 +40,7 @@ const courseFormat = [
   },
   {
     // Science
-    G1: "",
+    G1: "474",
     G2: "465",
     G3: "456",
     G4: "427",
@@ -50,7 +50,7 @@ const courseFormat = [
   },
   {
     // GK
-    G1: "",
+    G1: "475",
     G2: "464",
     G3: "457",
     G4: "430",
