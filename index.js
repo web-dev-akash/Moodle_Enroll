@@ -119,6 +119,21 @@ const getTrailTime = () => {
   };
 };
 
+const getMonthTime = () => {
+  let start = new Date();
+  start.setHours(0, 0, 0, 0);
+
+  let end = new Date();
+  end.setHours(23, 59, 59, 999);
+
+  let startTime = Math.floor(start.valueOf() / 1000);
+  let endTime = Math.floor(end.valueOf() / 1000) + 2630000;
+  return {
+    startTime,
+    endTime,
+  };
+};
+
 const getPaidTime = () => {
   let start = new Date();
   start.setHours(0, 0, 0, 0);
@@ -436,6 +451,78 @@ const updateTrailSubscription = async (userId, subscription, expiry) => {
 //     });
 //   }
 // });
+
+app.post("/newUser", authMiddleware, async (req, res) => {
+  try {
+    let { email, phone, student_name } = req.body;
+    const webinarCourseID = "478";
+    const { startTime, endTime } = getMonthTime();
+    if (phone.length > 10) {
+      phone = phone.substring(phone.length - 10, phone.length);
+    }
+    email = email.toLowerCase();
+    console.log(email);
+    const firstname = student_name.split(" ")[0];
+    let lastname = "";
+    if (student_name.split(" ").length == 1) {
+      lastname = ".";
+    } else {
+      lastname = student_name.split(" ")[1];
+      if (lastname[0] == " ") {
+        lastname = ".";
+      }
+    }
+    const checkUser = await getExistingUser(email);
+    if (checkUser && checkUser.length > 0) {
+      const uid = checkUser[0].id;
+      const data = checkUser[0].customfields.filter(
+        (res) => res.shortname === "live_quiz_subscription"
+      );
+      if (data[0].value === "NA") {
+        await enrolUserToCourse({
+          courseId: webinarCourseID,
+          timeStart: startTime,
+          timeEnd: endTime,
+          userId: uid,
+        });
+        return res.status(200).send({
+          status: "addedToWebniarCourse",
+          checkUser,
+        });
+      } else {
+        return res.status(200).send({
+          status: "alreadyEnrolled",
+          checkUser,
+        });
+      }
+    }
+    const user = await createUser({
+      email,
+      firstname,
+      lastname,
+      phone,
+      subscription: "NA",
+      trialExpiry: 0,
+    });
+    const uid = user[0].id;
+    await enrolUserToCourse({
+      courseId: webinarCourseID,
+      timeStart: startTime,
+      timeEnd: endTime,
+      userId: uid,
+    });
+    user[0].password = phone;
+    return res.status(200).send({
+      status: "createdAndAddedToWebniarCourse",
+      user,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({
+      error,
+    });
+  }
+});
 
 app.post("/createTrailUser", authMiddleware, async (req, res) => {
   try {
