@@ -60,6 +60,15 @@ const courseFormat = [
   },
 ];
 
+const newcourses = {
+  G1: "482",
+  G2: "483",
+  G3: "484",
+  G4: "485",
+  G5: "486",
+  G6: "487",
+  G7: "488",
+};
 // const allLiveQuizCourses = [
 //   "453",
 //   "420",
@@ -520,6 +529,156 @@ app.post("/newUser", authMiddleware, async (req, res) => {
     console.log(error);
     return res.status(500).send({
       error,
+    });
+  }
+});
+
+app.post("/enrollWebinarUser", async (req, res) => {
+  try {
+    let { email, phone, student_name, student_grade } = req.body;
+    console.log("Started the flow");
+    if (phone.length > 10) {
+      phone = phone.substring(phone.length - 10, phone.length);
+    }
+    email = email.toLowerCase();
+    console.log(email);
+    const firstname = student_name.split(" ")[0];
+    let lastname = "";
+    if (student_name.split(" ").length == 1) {
+      lastname = ".";
+    } else {
+      lastname = student_name.split(" ")[1];
+      if (lastname[0] == " ") {
+        lastname = ".";
+      }
+    }
+    let grade = "";
+    if (student_grade.includes("3")) {
+      grade = "G3";
+    } else if (student_grade.includes("4")) {
+      grade = "G4";
+    } else if (student_grade.includes("5")) {
+      grade = "G5";
+    } else if (student_grade.includes("6")) {
+      grade = "G6";
+    } else if (student_grade.includes("7")) {
+      grade = "G7";
+    } else if (student_grade.includes("2")) {
+      grade = "G2";
+    } else if (student_grade.includes("1")) {
+      grade = "G1";
+    }
+    const cid = newcourses[grade];
+    console.log(cid);
+    const userExist = await getExistingUser(email);
+    let { startTime, endTime } = getTrailTime();
+    if (userExist.length == 0) {
+      try {
+        const user = await createUser({
+          email,
+          firstname,
+          lastname,
+          phone,
+          subscription: "Trial",
+          trialExpiry: endTime,
+        });
+        const uid = user[0].id;
+        await enrolUserToCourse({
+          courseId: cid,
+          timeStart: startTime,
+          timeEnd: endTime,
+          userId: uid,
+        });
+        user[0].password = phone;
+        return res.status(200).send({
+          user,
+          status: "trialactivated",
+        });
+      } catch (error) {
+        return res.status(500).send({
+          error,
+        });
+      }
+    } else {
+      const data = userExist[0].customfields;
+      const subscription = data[data.length - 1].value;
+      if (subscription == "NA") {
+        try {
+          const userId = userExist[0].id;
+          await updateTrailSubscription(userId, "Trial", endTime);
+          await enrolUserToCourse({
+            courseId: cid,
+            timeStart: startTime,
+            timeEnd: endTime,
+            userId,
+          });
+          console.log("trial activated");
+          return res.status(200).send({
+            user: [
+              {
+                id: userExist[0].id,
+                username: userExist[0].email,
+                password: "wise@123",
+              },
+            ],
+            status: "trialactivated",
+          });
+        } catch (error) {
+          return res.status(404).send({
+            message: "User not found",
+          });
+        }
+      } else if (subscription == "Trial") {
+        console.log({ email: userExist[0].email, status: "trialinprogress" });
+        return res.status(200).send({
+          user: [
+            {
+              id: userExist[0].id,
+              username: userExist[0].email,
+              password: "wise@123",
+            },
+          ],
+          status: "trialinprogress",
+        });
+      } else if (subscription == "Tier 1" || subscription == "Tier 2") {
+        return res.status(200).send({
+          user: [
+            {
+              id: userExist[0].id,
+              username: userExist[0].email,
+              password: "wise@123",
+            },
+          ],
+          status: "alreadyapaiduser",
+        });
+      } else if (subscription == "Trial Expired") {
+        return res.status(200).send({
+          user: [
+            {
+              id: userExist[0].id,
+              username: userExist[0].email,
+              password: "wise@123",
+            },
+          ],
+          status: "trialexpired",
+        });
+      } else if (subscription == "Subscription Expired") {
+        return res.status(200).send({
+          user: [
+            {
+              id: userExist[0].id,
+              username: userExist[0].email,
+              password: "wise@123",
+            },
+          ],
+          status: "subscriptionexpired",
+        });
+      }
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({
+      status: error,
     });
   }
 });
