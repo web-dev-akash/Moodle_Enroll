@@ -1381,22 +1381,22 @@ const updateTagInZoho = async (email) => {
 };
 
 const getUserFirstAccess = async (data) => {
-  // const id = data.userid;
-  // const loggedinTime = data.timecreated;
-  // const email = data.other.username;
-  // const res = await axios.get(
-  //   `${url}?wstoken=${WSTOKEN}&wsfunction=core_user_get_users_by_field&field=id&values[0]=${id}&moodlewsrestformat=json`
-  // );
-  // // console.log(res.data);
-  // const firstaccess = res.data[0].firstaccess;
-  // const loggedDate = new Date(loggedinTime * 1000).toLocaleDateString();
-  // const firstDate = new Date(firstaccess * 1000).toLocaleDateString();
-  // console.log(firstDate, loggedDate);
-  // if (firstDate == loggedDate) {
-  const zoho = await updateTagInZoho(data.email);
-  return { zoho, status: "firstlogin" };
-  // }
-  // return { status: "notfirstlogin" };
+  const id = data.userid;
+  const loggedinTime = data.timecreated;
+  const email = data.other.username;
+  const res = await axios.get(
+    `${url}?wstoken=${WSTOKEN}&wsfunction=core_user_get_users_by_field&field=id&values[0]=${id}&moodlewsrestformat=json`
+  );
+  // console.log(res.data);
+  const firstaccess = res.data[0].firstaccess;
+  const loggedDate = new Date(loggedinTime * 1000).toLocaleDateString();
+  const firstDate = new Date(firstaccess * 1000).toLocaleDateString();
+  console.log(firstDate, loggedDate);
+  if (firstDate == loggedDate) {
+    const zoho = await updateTagInZoho(email);
+    return { zoho, status: "firstlogin" };
+  }
+  return { status: "notfirstlogin" };
 };
 
 app.post("/firstLogin", async (req, res) => {
