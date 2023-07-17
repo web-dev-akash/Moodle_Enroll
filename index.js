@@ -2877,6 +2877,72 @@ const getScheduleFromSheet = async () => {
   return finalWeeklyData;
 };
 
+const getWorkshopScheduleFromSheet = async () => {
+  const { startTime, endTime } = getTrailTime();
+  const workshopData = [];
+  const spreadsheetId = process.env.SCHEDULE_SPREADSHEET_ID;
+  const auth = new google.auth.GoogleAuth({
+    keyFile: "key.json", //the key file
+    scopes: "https://www.googleapis.com/auth/spreadsheets",
+  });
+
+  const authClientObject = await auth.getClient();
+  const sheet = google.sheets({
+    version: "v4",
+    auth: authClientObject,
+  });
+
+  const readData = await sheet.spreadsheets.values.get({
+    auth, //auth object
+    spreadsheetId, // spreadsheet id
+    range: "Workshop Schedule!A:D", //range of cells to read from.
+  });
+  const data = readData.data.values;
+  // console.log(data);
+  // return data;
+  for (let i = 1; i < data.length; i++) {
+    // i === 1 && console.log(data[i]);
+    const realDate = data[i][0];
+    const date = data[i][0].split("/");
+    const day = data[i][1];
+    const grade = data[i][2];
+    const time = data[i][3];
+    console.log(time);
+    const month = Number(date[1]) - 1;
+    console.log(month);
+
+    const newDate = new Date(date[2], month, date[0]);
+    console.log(newDate);
+
+    const timestamp = Math.floor(newDate.getTime() / 1000);
+    // console.log(timestamp);
+    if (timestamp >= startTime && timestamp <= endTime) {
+      const obj = {
+        realDate,
+        time,
+        day,
+        grade,
+      };
+      workshopData.push(obj);
+    }
+  }
+  return workshopData;
+};
+
+app.get("/workshopSchedule", async (req, res) => {
+  try {
+    const data = await getWorkshopScheduleFromSheet();
+    // console.log(data);
+    res.send({
+      data,
+    });
+  } catch (error) {
+    res.status(500).send({
+      error,
+    });
+  }
+});
+
 const getDailySchedule = async () => {
   const { startTime, endTime } = getTrailTime();
   const finalWeeklyData = [];
