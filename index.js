@@ -69,28 +69,14 @@ const newcourses = {
   G6: "487",
   G7: "488",
 };
-// const allLiveQuizCourses = [
-//   "453",
-//   "420",
-//   "421",
-//   "422",
-//   "460",
-//   "452",
-//   "424",
-//   "425",
-//   "426",
-//   "459",
-//   "456",
-//   "427",
-//   "428",
-//   "429",
-//   "461",
-//   "457",
-//   "430",
-//   "431",
-//   "432",
-//   "462",
-// ];
+
+const webinarCourses = {
+  G1G2: "489",
+  G3G4: "490",
+  G5G6: "491",
+  G7G8: "492",
+};
+
 const wstoken = process.env.WSTOKEN;
 const wsfunctionCreate = "core_user_create_users";
 const wsfunctionEnrol = "enrol_manual_enrol_users";
@@ -463,8 +449,7 @@ const updateTrailSubscription = async (userId, subscription, expiry) => {
 
 app.post("/newUser", authMiddleware, async (req, res) => {
   try {
-    let { email, phone, student_name } = req.body;
-    const webinarCourseID = "478";
+    let { email, phone, student_name, student_grade } = req.body;
     const { startTime, endTime } = getMonthTime();
     if (phone.length > 10) {
       phone = phone.substring(phone.length - 10, phone.length);
@@ -481,7 +466,18 @@ app.post("/newUser", authMiddleware, async (req, res) => {
         lastname = ".";
       }
     }
+    let grade = "";
+    if (student_grade.includes("1") || student_grade.includes("2")) {
+      grade = "G1G2";
+    } else if (student_grade.includes("3") || student_grade.includes("4")) {
+      grade = "G3G4";
+    } else if (student_grade.includes("5") || student_grade.includes("6")) {
+      grade = "G5G6";
+    } else if (student_grade.includes("7") || student_grade.includes("8")) {
+      grade = "G7G8";
+    }
     const checkUser = await getExistingUser(email);
+    const cid = webinarCourses[grade];
     if (checkUser && checkUser.length > 0) {
       const uid = checkUser[0].id;
       const data = checkUser[0].customfields.filter(
@@ -489,7 +485,7 @@ app.post("/newUser", authMiddleware, async (req, res) => {
       );
       if (data[0].value === "NA") {
         await enrolUserToCourse({
-          courseId: webinarCourseID,
+          courseId: cid,
           timeStart: startTime,
           timeEnd: endTime,
           userId: uid,
@@ -515,7 +511,7 @@ app.post("/newUser", authMiddleware, async (req, res) => {
     });
     const uid = user[0].id;
     await enrolUserToCourse({
-      courseId: webinarCourseID,
+      courseId: cid,
       timeStart: startTime,
       timeEnd: endTime,
       userId: uid,
@@ -718,6 +714,7 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
     } else if (student_grade.includes("1")) {
       grade = "G1";
     }
+    const cid = newcourses[grade];
     const userExist = await getExistingUser(email);
     let { startTime, endTime } = getTrailTime();
     if (userExist.length == 0) {
@@ -731,15 +728,12 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
           trialExpiry: endTime,
         });
         const uid = user[0].id;
-        for (i = 0; i < 4; i++) {
-          const cid = courseFormat[i][grade];
-          await enrolUserToCourse({
-            courseId: cid,
-            timeStart: startTime,
-            timeEnd: endTime,
-            userId: uid,
-          });
-        }
+        await enrolUserToCourse({
+          courseId: cid,
+          timeStart: startTime,
+          timeEnd: endTime,
+          userId: uid,
+        });
         user[0].password = phone;
         return res.status(200).send({
           user,
@@ -757,15 +751,12 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
         try {
           const userId = userExist[0].id;
           await updateTrailSubscription(userId, "Trial", endTime);
-          for (i = 0; i < 4; i++) {
-            const cid = courseFormat[i][grade];
-            await enrolUserToCourse({
-              courseId: cid,
-              timeStart: startTime,
-              timeEnd: endTime,
-              userId,
-            });
-          }
+          await enrolUserToCourse({
+            courseId: cid,
+            timeStart: startTime,
+            timeEnd: endTime,
+            userId,
+          });
           console.log("trial activated");
           return res.status(200).send({
             user: [
@@ -1304,10 +1295,7 @@ app.post("/captureReferral", async (req, res) => {
 });
 
 const updateTagInZoho = async (email) => {
-  const res = await axios.post(
-    `https://accounts.zoho.com/oauth/v2/token?client_id=${CLIENT_ID}&grant_type=refresh_token&client_secret=${CLIENT_SECRET}&refresh_token=${REFRESH_TOKEN}`
-  );
-  const token = res.data.access_token;
+  const token = await getZohoToken();
   const config = {
     headers: {
       Authorization: `Zoho-oauthtoken ${token}`,
@@ -1322,6 +1310,20 @@ const updateTagInZoho = async (email) => {
     return "Not a Zoho Contact";
   }
   const contactid = contact.data.data[0].id;
+  const contactbody = {
+    tags: [
+      {
+        name: "firstlogin",
+        id: "4878003000002954210",
+        color_code: "#F17574",
+      },
+    ],
+  };
+  await axios.post(
+    `https://www.zohoapis.com/crm/v3/Contacts/${contactid}/actions/add_tags`,
+    contactbody,
+    config
+  );
   const dealData = await axios.get(
     `https://www.zohoapis.com/crm/v3/Deals/search?criteria=((Contact_Name:equals:${contactid}))`,
     config
@@ -1379,22 +1381,22 @@ const updateTagInZoho = async (email) => {
 };
 
 const getUserFirstAccess = async (data) => {
-  const id = data.userid;
-  const loggedinTime = data.timecreated;
-  const email = data.other.username;
-  const res = await axios.get(
-    `${url}?wstoken=${WSTOKEN}&wsfunction=core_user_get_users_by_field&field=id&values[0]=${id}&moodlewsrestformat=json`
-  );
-  // console.log(res.data);
-  const firstaccess = res.data[0].firstaccess;
-  const loggedDate = new Date(loggedinTime * 1000).toLocaleDateString();
-  const firstDate = new Date(firstaccess * 1000).toLocaleDateString();
-  console.log(firstDate, loggedDate);
-  if (firstDate == loggedDate) {
-    const zoho = await updateTagInZoho(email);
-    return { zoho, status: "firstlogin" };
-  }
-  return { status: "notfirstlogin" };
+  // const id = data.userid;
+  // const loggedinTime = data.timecreated;
+  // const email = data.other.username;
+  // const res = await axios.get(
+  //   `${url}?wstoken=${WSTOKEN}&wsfunction=core_user_get_users_by_field&field=id&values[0]=${id}&moodlewsrestformat=json`
+  // );
+  // // console.log(res.data);
+  // const firstaccess = res.data[0].firstaccess;
+  // const loggedDate = new Date(loggedinTime * 1000).toLocaleDateString();
+  // const firstDate = new Date(firstaccess * 1000).toLocaleDateString();
+  // console.log(firstDate, loggedDate);
+  // if (firstDate == loggedDate) {
+  const zoho = await updateTagInZoho(data.email);
+  return { zoho, status: "firstlogin" };
+  // }
+  // return { status: "notfirstlogin" };
 };
 
 app.post("/firstLogin", async (req, res) => {
