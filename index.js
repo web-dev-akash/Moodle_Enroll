@@ -2780,16 +2780,15 @@ const getRegularLogin = async () => {
   aggregatedData.map(async (user) => {
     const length = user.currentDate.length;
     if (length > 1 && user.currentDate[1].date == todaysDate) {
-      // console.log(user.email);
       await updateNumberOfClasses(
         user.email,
         token,
         user.sessions.length,
         user.currentDate[1].timestamp
       );
-      if (user.sessions.length >= 1) {
-        await updateStageInZoho(user.email, token);
-      }
+      // if (user.sessions.length >= 1) {
+      //   await updateStageInZoho(user.email, token);
+      // }
       if (user.sessions.length == 1) {
         await checkFirstQuizAttemptedTag(user.email, token);
         await updateScoreinZoho(user.email, 2, token);
@@ -2806,7 +2805,7 @@ const getRegularLogin = async () => {
         for (i = 0; i < current; i++) {
           addScore += score[user.prevDate.length + i];
         }
-        await checkRegularAttendeeTag(user.email, token);
+        // await checkRegularAttendeeTag(user.email, token);
         await updateScoreinZoho(user.email, addScore, token);
       }
     }
