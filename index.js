@@ -2878,6 +2878,60 @@ const getScheduleFromSheet = async () => {
   return finalWeeklyData;
 };
 
+const convertTo12HourFormat = (time) => {
+  const [hours, minutes] = time.split(":");
+  const date = new Date();
+  date.setHours(hours);
+  date.setMinutes(minutes);
+  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+};
+
+const getWorkshopReminderScheduleFromSheet = async () => {
+  const workshopData = [];
+  const spreadsheetId = process.env.SCHEDULE_SPREADSHEET_ID;
+  const auth = new google.auth.GoogleAuth({
+    keyFile: "key.json", //the key file
+    scopes: "https://www.googleapis.com/auth/spreadsheets",
+  });
+
+  const authClientObject = await auth.getClient();
+  const sheet = google.sheets({
+    version: "v4",
+    auth: authClientObject,
+  });
+
+  const readData = await sheet.spreadsheets.values.get({
+    auth, //auth object
+    spreadsheetId, // spreadsheet id
+    range: "Workshop Reminders!A:B", //range of cells to read from.
+  });
+  const data = readData.data.values;
+  for (let i = 1; i < data.length; i++) {
+    const template = data[i][0];
+    const time = data[i][1];
+    const newTime = convertTo12HourFormat(time).toLocaleUpperCase();
+    const obj = {
+      template,
+      newTime,
+    };
+    workshopData.push(obj);
+  }
+  return workshopData;
+};
+
+app.get("/workshopReminderSchedule", async (req, res) => {
+  try {
+    const data = await getWorkshopReminderScheduleFromSheet();
+    res.send({
+      data,
+    });
+  } catch (error) {
+    res.status(500).send({
+      error,
+    });
+  }
+});
+
 const getWorkshopScheduleFromSheet = async () => {
   const { startTime, endTime } = getTrailTime();
   const workshopData = [];
