@@ -3176,7 +3176,7 @@ const getTesterScheduleFromSheet = async () => {
   });
   const data = readData.data.values;
   for (let i = 1; i < data.length; i++) {
-    const sessionid = data[i][0] ? data[i][9] : "";
+    const sessionid = data[i][9] ? data[i][9] : "";
     const date = data[i][4].split("/");
 
     const newDate = new Date(
@@ -3184,7 +3184,7 @@ const getTesterScheduleFromSheet = async () => {
       Number(date[1]) - 1,
       date[0]
     ).toDateString();
-    if (currDate === newDate) {
+    if (currDate === newDate && sessionid !== "") {
       const obj = {
         sessionid,
       };
