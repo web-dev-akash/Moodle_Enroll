@@ -3154,6 +3154,59 @@ app.get("/previousReport", async (req, res) => {
   }
 });
 
+const getTesterScheduleFromSheet = async () => {
+  const currDate = new Date().toDateString();
+  const finalWeeklyData = [];
+  const spreadsheetId = process.env.SCHEDULE_SPREADSHEET_ID;
+  const auth = new google.auth.GoogleAuth({
+    keyFile: "key.json", //the key file
+    scopes: "https://www.googleapis.com/auth/spreadsheets",
+  });
+
+  const authClientObject = await auth.getClient();
+  const sheet = google.sheets({
+    version: "v4",
+    auth: authClientObject,
+  });
+
+  const readData = await sheet.spreadsheets.values.get({
+    auth, //auth object
+    spreadsheetId, // spreadsheet id
+    range: "Schedule!A:J", //range of cells to read from.
+  });
+  const data = readData.data.values;
+  for (let i = 1; i < data.length; i++) {
+    const sessionid = data[i][0] ? data[i][9] : "";
+    const date = data[i][4].split("/");
+
+    const newDate = new Date(
+      date[2],
+      Number(date[1]) - 1,
+      date[0]
+    ).toDateString();
+    if (currDate === newDate) {
+      const obj = {
+        sessionid,
+      };
+      finalWeeklyData.push(obj);
+    }
+  }
+  return finalWeeklyData;
+};
+
+app.get("/testerSchedule", async (req, res) => {
+  try {
+    const data = await getTesterScheduleFromSheet();
+    res.send({
+      data,
+    });
+  } catch (error) {
+    res.status(500).send({
+      error,
+    });
+  }
+});
+
 app.post("/template/topic", async (req, res) => {
   try {
     const today = new Date().toDateString();
