@@ -80,6 +80,7 @@ const webinarCourses = {
 const wstoken = process.env.WSTOKEN;
 const wsfunctionCreate = "core_user_create_users";
 const wsfunctionEnrol = "enrol_manual_enrol_users";
+const wsfunctionUnenrol = "enrol_manual_unenrol_users";
 const wsfunctionGetContent = "core_course_get_contents";
 
 const authMiddleware = (req, res, next) => {
@@ -188,6 +189,13 @@ const createUser = async ({
 const enrolUserToCourse = async ({ courseId, timeStart, timeEnd, userId }) => {
   const res = await axios.post(
     `${url}?wstoken=${wstoken}&wsfunction=${wsfunctionEnrol}&enrolments[0][roleid]=5&enrolments[0][userid]=${userId}&enrolments[0][courseid]=${courseId}&enrolments[0][timestart]=${timeStart}&enrolments[0][timeend]=${timeEnd}&moodlewsrestformat=json`
+  );
+  return res.data;
+};
+
+const unenrolUserFromCourse = async ({ courseid, userid }) => {
+  const res = await axios.post(
+    `${url}?wstoken=${wstoken}&wsfunction=${wsfunctionUnenrol}&enrolments[0][userid]=${userid}&enrolments[0][courseid]=${courseid}&moodlewsrestformat=json`
   );
   return res.data;
 };
@@ -674,6 +682,34 @@ app.post("/enrollWebinarUser", async (req, res) => {
   } catch (error) {
     console.log(error);
     res.status(500).send({
+      status: error,
+    });
+  }
+});
+
+app.post("/unenrolUserFromCourse", authMiddleware, async (req, res) => {
+  try {
+    let { email, student_grade } = req.body;
+    const [{ id }] = await getExistingUser(email);
+    let grade = "";
+    if (student_grade.includes("1") || student_grade.includes("2")) {
+      grade = "G1G2";
+    } else if (student_grade.includes("3") || student_grade.includes("4")) {
+      grade = "G3G4";
+    } else if (student_grade.includes("5") || student_grade.includes("6")) {
+      grade = "G5G6";
+    } else if (student_grade.includes("7") || student_grade.includes("8")) {
+      grade = "G7G8";
+    }
+    const cid = webinarCourses[grade];
+    const data = await unenrolUserFromCourse({
+      userid: Number(id),
+      courseid: Number(cid),
+    });
+    return res.send({ data });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({
       status: error,
     });
   }
