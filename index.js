@@ -716,7 +716,7 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
     }
     const cid = newcourses[grade];
     const userExist = await getExistingUser(email);
-    let { startTime, endTime } = getTrailTime();
+    let { startTime, endTime } = getMonthTime();
     if (userExist.length == 0) {
       try {
         const user = await createUser({
