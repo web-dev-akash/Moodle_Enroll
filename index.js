@@ -2698,10 +2698,10 @@ const checkRegularAttendeeTag = async (email, token) => {
 const updateNumberOfClasses = async (email, token, totalClasses, lastClass) => {
   const date = new Date(lastClass * 1000).toLocaleDateString().split("/");
   console.log(date);
-  const month = date[1].length == 1 ? `0${date[1]}` : `${date[1]}`;
-  const day = date[0].length == 1 ? `0${date[0]}` : `${date[0]}`;
+  const day = date[1].length == 1 ? `0${date[1]}` : `${date[1]}`;
+  const month = date[0].length == 1 ? `0${date[0]}` : `${date[0]}`;
   const lastAccess = `${date[2]}-${month}-${day}`;
-  console.log(lastAccess);
+  console.log(day, month, lastAccess);
   const config = {
     headers: {
       Authorization: `Zoho-oauthtoken ${token}`,
@@ -2758,6 +2758,7 @@ const getRegularLogin = async () => {
   const aggregatedData = [];
   const todaysDate = new Date().toDateString();
   const rows = await getSheetData();
+  // return rows;
   for (let i = 0; i < rows.length; i++) {
     const email = rows[i].c[3].v;
     const timeS = new Date(rows[i].c[4].f);
@@ -2804,46 +2805,23 @@ const getRegularLogin = async () => {
     }
   }
 
+  // return aggregatedData;
+
   aggregatedData.map((res) => {
     const data = res.prevDate.sort((a, b) => b.timestamp - a.timestamp);
     aggregatedData.prevDate = data;
   });
 
-  const score = [2, 3, 5, 10, 20];
-
-  // return aggregatedData;
-
   aggregatedData.map(async (user) => {
     const length = user.currentDate.length;
     if (length > 1 && user.currentDate[1].date == todaysDate) {
-      await updateNumberOfClasses(
-        user.email,
-        token,
-        user.sessions.length,
-        user.currentDate[1].timestamp
-      );
-      // if (user.sessions.length >= 1) {
-      //   await updateStageInZoho(user.email, token);
-      // }
-      if (user.sessions.length == 1) {
-        await checkFirstQuizAttemptedTag(user.email, token);
-        await updateScoreinZoho(user.email, 2, token);
-      } else if (
-        user.sessions.length == 2 &&
-        user.prevDate.length == 1 &&
-        user.prevDate[0].timestamp === user.currentDate[1].timestamp
-      ) {
-        await checkFirstQuizAttemptedTag(user.email, token);
-        await updateScoreinZoho(user.email, 5, token);
-      } else if (user.sessions.length > 1 && user.sessions.length <= 5) {
-        const current = user.sessions.length - user.prevDate.length;
-        let addScore = 0;
-        for (i = 0; i < current; i++) {
-          addScore += score[user.prevDate.length + i];
-        }
-        // await checkRegularAttendeeTag(user.email, token);
-        await updateScoreinZoho(user.email, addScore, token);
-      }
+      if (user.email === "akash1.wisechamps@gmail.com")
+        await updateNumberOfClasses(
+          user.email,
+          token,
+          user.sessions.length,
+          user.currentDate[1].timestamp
+        );
     }
   });
   return "Success";
@@ -2852,7 +2830,7 @@ const getRegularLogin = async () => {
 app.get("/regularLogin", async (req, res) => {
   try {
     const data = await getRegularLogin();
-    return res.status(200).send({
+    return res.send({
       data,
     });
   } catch (error) {
