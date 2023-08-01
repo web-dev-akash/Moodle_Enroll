@@ -2698,8 +2698,8 @@ const checkRegularAttendeeTag = async (email, token) => {
 const updateNumberOfClasses = async (email, token, totalClasses, lastClass) => {
   const date = new Date(lastClass * 1000).toLocaleDateString().split("/");
   console.log(date);
-  const day = date[1].length == 1 ? `0${date[1]}` : `${date[1]}`;
-  const month = date[0].length == 1 ? `0${date[0]}` : `${date[0]}`;
+  const month = date[1].length == 1 ? `0${date[1]}` : `${date[1]}`;
+  const day = date[0].length == 1 ? `0${date[0]}` : `${date[0]}`;
   const lastAccess = `${date[2]}-${month}-${day}`;
   console.log(day, month, lastAccess);
   const config = {
