@@ -2805,8 +2805,6 @@ const getRegularLogin = async () => {
     }
   }
 
-  // return aggregatedData;
-
   aggregatedData.map((res) => {
     const data = res.prevDate.sort((a, b) => b.timestamp - a.timestamp);
     aggregatedData.prevDate = data;
