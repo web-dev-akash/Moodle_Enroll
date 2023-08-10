@@ -181,7 +181,7 @@ const createUser = async ({
   trialExpiry,
 }) => {
   const res = await axios.post(
-    `${url}?wstoken=${wstoken}&wsfunction=${wsfunctionCreate}&users[0][username]=${email}&users[0][password]=${phone}&users[0][firstname]=${firstname}&users[0][lastname]=${lastname}&users[0][email]=${email}&users[0][phone1]=${phone}&users[0][customfields][0][type]=live_quiz_subscription&users[0][customfields][0][value]=${subscription}&users[0][customfields][1][type]=trialexpirydate&users[0][customfields][1][value]=${trialExpiry}&moodlewsrestformat=json`
+    `${url}?wstoken=${wstoken}&wsfunction=${wsfunctionCreate}&users[0][username]=${email}&users[0][password]=${phone}&users[0][firstname]=${firstname}&users[0][lastname]=${lastname}&users[0][email]=${email}&users[0][phone1]=${phone}&users[0][customfields][0][type]=live_quiz_subscription&users[0][customfields][0][value]=${subscription}&users[0][customfields][1][type]=trialexpirydate&users[0][customfields][1][value]=${trialExpiry}&users[0][customfields][2][type]=real_password&users[0][customfields][2][value]=${phone}&moodlewsrestformat=json`
   );
   return res.data;
 };
