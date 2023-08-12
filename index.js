@@ -2698,8 +2698,8 @@ const checkRegularAttendeeTag = async (email, token) => {
 const updateNumberOfClasses = async (email, token, totalClasses, lastClass) => {
   const date = new Date(lastClass * 1000).toLocaleDateString().split("/");
   console.log(date);
-  const day = date[1].length == 1 ? `0${date[1]}` : `${date[1]}`;
-  const month = date[0].length == 1 ? `0${date[0]}` : `${date[0]}`;
+  const month = date[1].length == 1 ? `0${date[1]}` : `${date[1]}`;
+  const day = date[0].length == 1 ? `0${date[0]}` : `${date[0]}`;
   const lastAccess = `${date[2]}-${month}-${day}`;
   console.log(day, month, lastAccess);
   const config = {
@@ -2758,7 +2758,6 @@ const getRegularLogin = async () => {
   const aggregatedData = [];
   const todaysDate = new Date().toDateString();
   const rows = await getSheetData();
-  // return rows;
   for (let i = 0; i < rows.length; i++) {
     const email = rows[i].c[3].v;
     const timeS = new Date(rows[i].c[4].f);
@@ -2810,6 +2809,9 @@ const getRegularLogin = async () => {
     aggregatedData.prevDate = data;
   });
 
+  // return aggregatedData;
+
+  const finalUsers = [];
   aggregatedData.map(async (user) => {
     const length = user.currentDate.length;
     if (
@@ -2817,15 +2819,17 @@ const getRegularLogin = async () => {
       user.currentDate[1].date == todaysDate &&
       !user.email.includes("1234500")
     ) {
-      await updateNumberOfClasses(
-        user.email,
-        token,
-        user.sessions.length,
-        user.currentDate[1].timestamp
-      );
+      finalUsers.push(user);
     }
   });
-  return "Success";
+  for (let i = 0; i < finalUsers.length; i++) {
+    await updateNumberOfClasses(
+      finalUsers[i].email,
+      token,
+      finalUsers[i].sessions.length,
+      finalUsers[i].currentDate[1].timestamp
+    );
+  }
 };
 
 app.get("/regularLogin", async (req, res) => {
