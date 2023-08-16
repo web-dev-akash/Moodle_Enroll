@@ -488,26 +488,16 @@ app.post("/newUser", authMiddleware, async (req, res) => {
     const cid = webinarCourses[grade];
     if (checkUser && checkUser.length > 0) {
       const uid = checkUser[0].id;
-      const data = checkUser[0].customfields.filter(
-        (res) => res.shortname === "live_quiz_subscription"
-      );
-      if (data[0].value === "NA") {
-        await enrolUserToCourse({
-          courseId: cid,
-          timeStart: startTime,
-          timeEnd: endTime,
-          userId: uid,
-        });
-        return res.status(200).send({
-          status: "addedToWebniarCourse",
-          checkUser,
-        });
-      } else {
-        return res.status(200).send({
-          status: "alreadyEnrolled",
-          checkUser,
-        });
-      }
+      await enrolUserToCourse({
+        courseId: cid,
+        timeStart: startTime,
+        timeEnd: endTime,
+        userId: uid,
+      });
+      return res.status(200).send({
+        status: "addedToWebniarCourse",
+        checkUser,
+      });
     }
     const user = await createUser({
       email,
@@ -1094,17 +1084,14 @@ app.post("/enrolPaidUserThreeMonths", authMiddleware, async (req, res) => {
       message: "Course not found",
     });
   }
-  await updatePaidSubscription(userId, endTime);
   try {
-    for (i = 0; i < 4; i++) {
-      const cid = courseFormat[i][grade];
-      await enrolUserToCourse({
-        courseId: cid,
-        timeStart: startTime,
-        timeEnd: endTime,
-        userId,
-      });
-    }
+    const cid = newcourses[grade];
+    await enrolUserToCourse({
+      courseId: cid,
+      timeStart: startTime,
+      timeEnd: endTime,
+      userId,
+    });
     return res.status(200).send({
       status: "success",
     });
