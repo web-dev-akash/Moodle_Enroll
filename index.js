@@ -2824,11 +2824,14 @@ const getRegularLogin = async () => {
     }
   });
   for (let i = 0; i < finalUsers.length; i++) {
+    const timestamp = finalUsers[i].currentDate[1]
+      ? finalUsers[i].currentDate[1].timestamp
+      : finalUsers[i].prevDate[0].timestamp;
     await updateNumberOfClasses(
       finalUsers[i].email,
       token,
       finalUsers[i].sessions.length,
-      finalUsers[i].currentDate[1].timestamp
+      timestamp
     );
   }
   return finalUsers;
