@@ -2809,8 +2809,6 @@ const getRegularLogin = async () => {
     aggregatedData.prevDate = data;
   });
 
-  // return aggregatedData;
-
   const finalUsers = [];
   aggregatedData.map(async (user) => {
     const length = user.currentDate.length;
