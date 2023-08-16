@@ -2809,13 +2809,16 @@ const getRegularLogin = async () => {
     aggregatedData.prevDate = data;
   });
 
+  // return aggregatedData;
+
   const finalUsers = [];
   aggregatedData.map(async (user) => {
     const length = user.currentDate.length;
     if (
-      length > 1 &&
-      user.currentDate[1].date === todaysDate &&
-      !user.email.includes("1234500")
+      (length > 1 &&
+        user.currentDate[1].date === todaysDate &&
+        !user.email.includes("1234500")) ||
+      (user.prevDate[0].date === todaysDate && !user.email.includes("1234500"))
     ) {
       finalUsers.push(user);
     }
