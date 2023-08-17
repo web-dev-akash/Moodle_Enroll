@@ -1,18 +1,22 @@
-name: Deploying
+name: Deploy
 
 on:
-  push: branches:[master]
+  push:
+    branches: [master]
 
 jobs:
   deploy:
-    name: Deploy
+    name: Deploying NodeJS Application
     runs-on: ubuntu-latest
-    uses: actions/checkout@v3
 
     steps:
-      - name: executing remote ssh commands using ssh key
-        with:
-          host: ${{ secrets.AWS_HOST }}
-          username: ${{ secrets.AWS_USER }}
-          key: ${{ secrets.AWS_KEY }}
-          script: sh deploy.sh
+      - uses: actions/checkout@v3
+      - name: deploying application to EC2
+        env:
+          PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY  }}
+          HOSTNAME: ${{ secrets.SERVER_HOST  }}
+          USER_NAME: ${{ secrets.SERVER_USERNAME  }}
+
+        run: |
+          echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
+          ssh -o StrictHostKeyChecking=no -i private_key ${USER_NAME}@${HOSTNAME} bash sync.sh
