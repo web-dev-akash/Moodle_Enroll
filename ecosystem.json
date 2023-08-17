@@ -1,0 +1,16 @@
+{
+  "apps" : [
+     {
+        "name"          : "Moodle_Enroll",
+        "script"        : "npm",
+        "args"          : "run start",
+        "watch"         : false,
+        "cwd"           : "/home/ubuntu/Moodle_Enroll/",
+        "out_file"      : "/home/ubuntu/hooker.out.log",
+        "err_file"      : "/home/ubuntu/hooker.err.log",
+        "merge_logs"    : true,
+        "instances"     : 1,
+        "exec_mode"     : "cluster"
+     }
+  ]
+}
