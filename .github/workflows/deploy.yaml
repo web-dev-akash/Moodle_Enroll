@@ -2,8 +2,7 @@ name: Deploying
 
 on:
   push:
-    branches:
-      - master
+    branches:[master]
 
 jobs:
   deploy:
@@ -11,8 +10,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v3
       - name: executing remote ssh commands using ssh key
-        uses: web-dev-akash/Moodle_Enroll@master
         with:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USER }}
