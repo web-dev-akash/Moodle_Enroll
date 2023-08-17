@@ -3424,7 +3424,7 @@ app.post("/numberFormatter", (req, res) => {
 
 app.get("/test", (req, res) => {
   res.status(200).send({
-    message: "Server Started with auto deployed code",
+    message: "Server Started with New Code",
   });
 });
 
