@@ -3423,8 +3423,8 @@ app.post("/numberFormatter", (req, res) => {
 });
 
 app.get("/test", (req, res) => {
-  return res.send({
-    message: "AWS Deployed Code Again and Again",
+  res.status(200).send({
+    message: "Server Started with auto deployed code",
   });
 });
 
