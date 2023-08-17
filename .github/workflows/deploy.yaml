@@ -17,5 +17,6 @@ jobs:
           HOSTNAME: ${{ secrets.SERVER_HOST  }}
           USER_NAME: ${{ secrets.SERVER_USERNAME  }}
 
-        run: echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
+        run: |
+          echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
           ssh -o StrictHostKeyChecking=no -i private_key ${USER_NAME}@${HOSTNAME} bash deploy.sh
