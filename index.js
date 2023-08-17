@@ -3424,7 +3424,7 @@ app.post("/numberFormatter", (req, res) => {
 
 app.get("/test", (req, res) => {
   return res.send({
-    message: "Hi this is the auto deployed code to AWS",
+    message: "Hi this is the deployed code to AWS",
   });
 });
 
