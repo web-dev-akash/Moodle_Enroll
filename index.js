@@ -3422,6 +3422,12 @@ app.post("/numberFormatter", (req, res) => {
   });
 });
 
+app.get("/test", (req, res) => {
+  return res.send({
+    message: "Hi this is the auto deployed code to AWS",
+  });
+});
+
 app.listen(PORT, () => {
   console.log("Server Started 🎈🎈");
 });
