@@ -1342,65 +1342,65 @@ const updateTagInZoho = async (email) => {
       },
     ],
   };
-  await axios.post(
+  const updatedContact = await axios.post(
     `https://www.zohoapis.com/crm/v3/Contacts/${contactid}/actions/add_tags`,
     contactbody,
     config
   );
-  const dealData = await axios.get(
-    `https://www.zohoapis.com/crm/v3/Deals/search?criteria=((Contact_Name:equals:${contactid}))`,
-    config
-  );
-  if (!dealData.data) {
-    return "Not converted to deal";
-  }
-  const dealid = dealData.data.data[0].id;
-  const body = {
-    tags: [
-      {
-        name: "firstlogin",
-        id: "4878003000000773056",
-        color_code: "#FEDA62",
-      },
-    ],
-  };
-  const updateTag = await axios.post(
-    `https://www.zohoapis.com/crm/v3/Deals/${dealid}/actions/add_tags`,
-    body,
-    config
-  );
+  // const dealData = await axios.get(
+  //   `https://www.zohoapis.com/crm/v3/Deals/search?criteria=((Contact_Name:equals:${contactid}))`,
+  //   config
+  // );
+  // if (!dealData.data) {
+  //   return "Not converted to deal";
+  // }
+  // const dealid = dealData.data.data[0].id;
+  // const body = {
+  //   tags: [
+  //     {
+  //       name: "firstlogin",
+  //       id: "4878003000000773056",
+  //       color_code: "#FEDA62",
+  //     },
+  //   ],
+  // };
+  // const updateTag = await axios.post(
+  //   `https://www.zohoapis.com/crm/v3/Deals/${dealid}/actions/add_tags`,
+  //   body,
+  //   config
+  // );
 
-  const engagementScore =
-    dealData.data.data[0].Engagement_Score != null
-      ? Number(dealData.data.data[0].Engagement_Score)
-      : 0;
-  console.log(engagementScore);
-  let newEngagementScore = engagementScore + 10;
-  const dealBody = {
-    data: [
-      {
-        id: dealid,
-        Engagement_Score: newEngagementScore,
-        $append_values: {
-          Engagement_Score: true,
-        },
-      },
-    ],
-    duplicate_check_fields: ["id"],
-    apply_feature_execution: [
-      {
-        name: "layout_rules",
-      },
-    ],
-    trigger: ["workflow"],
-  };
+  // const engagementScore =
+  //   dealData.data.data[0].Engagement_Score != null
+  //     ? Number(dealData.data.data[0].Engagement_Score)
+  //     : 0;
+  // console.log(engagementScore);
+  // let newEngagementScore = engagementScore + 10;
+  // const dealBody = {
+  //   data: [
+  //     {
+  //       id: dealid,
+  //       Engagement_Score: newEngagementScore,
+  //       $append_values: {
+  //         Engagement_Score: true,
+  //       },
+  //     },
+  //   ],
+  //   duplicate_check_fields: ["id"],
+  //   apply_feature_execution: [
+  //     {
+  //       name: "layout_rules",
+  //     },
+  //   ],
+  //   trigger: ["workflow"],
+  // };
 
-  const updateDeal = await axios.post(
-    `https://www.zohoapis.com/crm/v3/Deals/upsert`,
-    dealBody,
-    config
-  );
-  return updateTag.data.data;
+  // const updateDeal = await axios.post(
+  //   `https://www.zohoapis.com/crm/v3/Deals/upsert`,
+  //   dealBody,
+  //   config
+  // );
+  return updatedContact;
 };
 
 const getUserFirstAccess = async (data) => {
