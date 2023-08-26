@@ -1060,7 +1060,6 @@ app.post("/enrolPaidUserThreeMonths", authMiddleware, async (req, res) => {
   end.setHours(23, 59, 59, 999);
   let endTime = Math.floor(end.valueOf() / 1000) + 7889400;
   const { startTime } = getPaidTime();
-  await markEnrolledonZoho(email);
   const user = await getExistingUser(email);
   const userId = user[0].id;
   let grade = "";
