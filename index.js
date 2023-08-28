@@ -527,14 +527,18 @@ app.post("/newUser", authMiddleware, async (req, res) => {
   }
 });
 
-app.post("/enrollWebinarUser", async (req, res) => {
+app.post("/enrollUser", async (req, res) => {
   try {
-    let { email, phone, student_name, student_grade } = req.body;
+    let { email, phone, student_name, student_grade, expiry_date } = req.body;
+    let end = new Date(expiry_date);
+    end.setHours(23, 59, 59, 999);
+    let endTime = Math.floor(end.valueOf() / 1000);
+    console.log("End Time :", endTime);
     console.log("Started the flow");
     if (phone.length > 10) {
       phone = phone.substring(phone.length - 10, phone.length);
     }
-    email = email.toLowerCase();
+    email = email.toLowerCase().trim();
     console.log(email);
     const firstname = student_name.split(" ")[0];
     let lastname = "";
@@ -565,7 +569,7 @@ app.post("/enrollWebinarUser", async (req, res) => {
     const cid = newcourses[grade];
     console.log(cid);
     const userExist = await getExistingUser(email);
-    let { startTime, endTime } = getTrailTime();
+    let { startTime } = getTrailTime();
     if (userExist.length == 0) {
       try {
         const user = await createUser({
@@ -573,7 +577,7 @@ app.post("/enrollWebinarUser", async (req, res) => {
           firstname,
           lastname,
           phone,
-          subscription: "Trial",
+          subscription: "Tier 2",
           trialExpiry: endTime,
         });
         const uid = user[0].id;
@@ -586,7 +590,7 @@ app.post("/enrollWebinarUser", async (req, res) => {
         user[0].password = phone;
         return res.status(200).send({
           user,
-          status: "trialactivated",
+          status: "User Enrolled Successfully!",
         });
       } catch (error) {
         return res.status(500).send({
@@ -599,14 +603,14 @@ app.post("/enrollWebinarUser", async (req, res) => {
       if (subscription == "NA") {
         try {
           const userId = userExist[0].id;
-          await updateTrailSubscription(userId, "Trial", endTime);
+          await updateTrailSubscription(userId, "Tier 2", endTime);
           await enrolUserToCourse({
             courseId: cid,
             timeStart: startTime,
             timeEnd: endTime,
             userId,
           });
-          console.log("trial activated");
+          console.log("User Enrolled Successfully!");
           return res.status(200).send({
             user: [
               {
