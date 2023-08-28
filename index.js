@@ -3408,10 +3408,12 @@ app.post("/loginFailed", async (req, res) => {
 });
 
 app.post("/numberFormatter", (req, res) => {
-  const { phone } = req.body;
-  const data = phone.substring(2, phone.length);
+  let { phone } = req.body;
+  if (phone.length > 10 && phone.startsWith("91")) {
+    phone = phone.substring(phone.length - 10, phone.length);
+  }
   res.send({
-    data,
+    phone,
   });
 });
 
