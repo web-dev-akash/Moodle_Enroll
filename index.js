@@ -3409,7 +3409,7 @@ app.post("/loginFailed", async (req, res) => {
 
 app.post("/numberFormatter", (req, res) => {
   let { phone } = req.body;
-  if (phone.length > 10 && phone.startsWith("91")) {
+  if (phone.length > 10) {
     phone = phone.substring(phone.length - 10, phone.length);
   }
   res.send({
