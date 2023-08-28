@@ -392,8 +392,9 @@ const addTagsToDeal = async (dealId, zohoConfig) => {
 // });
 
 const updateTrailSubscription = async (userId, subscription, expiry) => {
-  const urlS = `${url}?wstoken=${wstoken}&wsfunction=core_user_update_users&users[0][id]=${userId}&users[0][customfields][0][type]=live_quiz_subscription&users[0][customfields][0][value]=${subscription}&users[0][customfields][1][type]=trialexpirydate&users[0][customfields][1][value]=${expiry}&moodlewsrestformat=json`;
+  const urlS = `${url}?wstoken=${wstoken}&wsfunction=core_user_update_users&users[0][id]=${userId}&users[0][customfields][0][type]=live_quiz_subscription&users[0][customfields][0][value]=${subscription}&moodlewsrestformat=json`;
   const res = await axios.get(urlS);
+  console.log("Updated Subscription");
   return res.data;
 };
 
@@ -527,7 +528,7 @@ app.post("/newUser", authMiddleware, async (req, res) => {
   }
 });
 
-app.post("/enrollUser", async (req, res) => {
+app.post("/enrollUser", authMiddleware, async (req, res) => {
   try {
     let { email, phone, student_name, student_grade, expiry_date } = req.body;
     let end = new Date(expiry_date);
@@ -538,7 +539,8 @@ app.post("/enrollUser", async (req, res) => {
     if (phone.length > 10) {
       phone = phone.substring(phone.length - 10, phone.length);
     }
-    email = email.toLowerCase().trim();
+    email = email.trim();
+    email = email.toLowerCase();
     console.log(email);
     const firstname = student_name.split(" ")[0];
     let lastname = "";
@@ -599,11 +601,11 @@ app.post("/enrollUser", async (req, res) => {
       }
     } else {
       const data = userExist[0].customfields;
-      const subscription = data[data.length - 1].value;
+      const subscription = data[data.length - 2].value;
       if (subscription == "NA") {
         try {
           const userId = userExist[0].id;
-          await updateTrailSubscription(userId, "Tier 2", endTime);
+          await updateTrailSubscription(userId, "Tier 2");
           await enrolUserToCourse({
             courseId: cid,
             timeStart: startTime,
@@ -616,35 +618,23 @@ app.post("/enrollUser", async (req, res) => {
               {
                 id: userExist[0].id,
                 username: userExist[0].email,
-                password: "wise@123",
+                password: phone,
               },
             ],
-            status: "trialactivated",
+            status: "User Enrolled Successfully!",
           });
         } catch (error) {
           return res.status(404).send({
             message: "User not found",
           });
         }
-      } else if (subscription == "Trial") {
-        console.log({ email: userExist[0].email, status: "trialinprogress" });
-        return res.status(200).send({
-          user: [
-            {
-              id: userExist[0].id,
-              username: userExist[0].email,
-              password: "wise@123",
-            },
-          ],
-          status: "trialinprogress",
-        });
       } else if (subscription == "Tier 1" || subscription == "Tier 2") {
         return res.status(200).send({
           user: [
             {
               id: userExist[0].id,
               username: userExist[0].email,
-              password: "wise@123",
+              password: phone,
             },
           ],
           status: "alreadyapaiduser",
