@@ -600,8 +600,10 @@ app.post("/enrollUser", authMiddleware, async (req, res) => {
         });
       }
     } else {
-      const data = userExist[0].customfields;
-      const subscription = data[data.length - 2].value;
+      const data = userExist[0].customfields.filter(
+        (field) => field.shortname === "live_quiz_subscription"
+      );
+      const subscription = data[0].value;
       if (subscription == "NA") {
         try {
           const userId = userExist[0].id;
@@ -663,6 +665,7 @@ app.post("/enrollUser", authMiddleware, async (req, res) => {
         });
       }
     }
+    return res.status(200).send({ status: "No subscription" });
   } catch (error) {
     console.log(error);
     res.status(500).send({
