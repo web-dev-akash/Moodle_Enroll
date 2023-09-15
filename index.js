@@ -531,9 +531,9 @@ app.post("/newUser", authMiddleware, async (req, res) => {
 
 app.post("/enrollUserMegaCompetion", authMiddleware, async (req, res) => {
   try {
-    let { email, phone, student_name, student_grade, expiry_date, start_date } =
+    let { email, phone, student_name, student_grade, expiry_date, mode } =
       req.body;
-    let start = new Date(start_date);
+    let start = mode === "weekly" ? new Date() : new Date(expiry_date);
     start.setHours(0, 0, 0, 0);
     let startTime = Math.floor(start.valueOf() / 1000);
     let end = new Date(expiry_date);
