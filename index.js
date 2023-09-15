@@ -583,12 +583,14 @@ app.post("/enrollUser", authMiddleware, async (req, res) => {
           trialExpiry: endTime,
         });
         const uid = user[0].id;
-        await enrolUserToCourse({
-          courseId: cid,
-          timeStart: startTime,
-          timeEnd: endTime,
-          userId: uid,
-        });
+        cid
+          ? await enrolUserToCourse({
+              courseId: cid,
+              timeStart: startTime,
+              timeEnd: endTime,
+              userId: uid,
+            })
+          : null;
         user[0].password = phone;
         return res.status(200).send({
           user,
