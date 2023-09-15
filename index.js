@@ -68,6 +68,7 @@ const newcourses = {
   G5: "486",
   G6: "487",
   G7: "488",
+  G8: "525",
 };
 
 const webinarCourses = {
@@ -567,6 +568,8 @@ app.post("/enrollUser", authMiddleware, async (req, res) => {
       grade = "G2";
     } else if (student_grade.includes("1")) {
       grade = "G1";
+    } else if (student_grade.includes("8")) {
+      grade = "G8";
     }
     const cid = newcourses[grade];
     console.log(cid);
@@ -738,6 +741,8 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
       grade = "G2";
     } else if (student_grade.includes("1")) {
       grade = "G1";
+    } else if (student_grade.includes("8")) {
+      grade = "G8";
     }
     const cid = newcourses[grade];
     const userExist = await getExistingUser(email);
@@ -948,6 +953,8 @@ app.post("/enrolPaidUser", authMiddleware, async (req, res) => {
     grade = "G2";
   } else if (student_grade.includes("1")) {
     grade = "G1";
+  } else if (student_grade.includes("8")) {
+    grade = "G8";
   } else {
     return res.status(404).send({
       status: "error",
@@ -1076,6 +1083,8 @@ app.post("/enrolPaidUserThreeMonths", authMiddleware, async (req, res) => {
     grade = "G2";
   } else if (student_grade.includes("1")) {
     grade = "G1";
+  } else if (student_grade.includes("8")) {
+    grade = "G8";
   } else {
     return res.status(404).send({
       status: "error",
