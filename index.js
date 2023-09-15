@@ -534,10 +534,10 @@ app.post("/enrollUserMegaCompetion", authMiddleware, async (req, res) => {
     let { email, phone, student_name, student_grade, expiry_date, mode } =
       req.body;
     let start = mode === "weekly" ? new Date() : new Date(expiry_date);
-    start.setHours(0, 0, 0, 0);
+    start.setUTCHours(0, 0, 0, 0);
     let startTime = Math.floor(start.valueOf() / 1000);
     let end = new Date(expiry_date);
-    end.setHours(23, 59, 59, 999);
+    end.setUTCHours(23, 59, 59, 999);
     let endTime = Math.floor(end.valueOf() / 1000);
     console.log("End Time :", endTime);
     console.log("Started the flow");
