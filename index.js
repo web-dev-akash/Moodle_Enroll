@@ -585,7 +585,7 @@ app.post("/enrollUserMegaCompetion", authMiddleware, async (req, res) => {
           firstname,
           lastname,
           phone,
-          subscription: "Tier 2",
+          subscription: "Tier 1",
           trialExpiry: endTime,
         });
         const uid = user[0].id;
@@ -608,37 +608,16 @@ app.post("/enrollUserMegaCompetion", authMiddleware, async (req, res) => {
         });
       }
     } else {
-      const data = userExist[0].customfields.filter(
-        (field) => field.shortname === "live_quiz_subscription"
-      );
-      const subscription = data[0].value;
-      if (subscription == "NA") {
-        try {
-          const userId = userExist[0].id;
-          await updateTrailSubscription(userId, "Tier 2");
-          await enrolUserToCourse({
-            courseId: cid,
-            timeStart: startTime,
-            timeEnd: endTime,
-            userId,
-          });
-          console.log("User Enrolled Successfully!");
-          return res.status(200).send({
-            user: [
-              {
-                id: userExist[0].id,
-                username: userExist[0].email,
-                password: phone,
-              },
-            ],
-            status: "User Enrolled Successfully!",
-          });
-        } catch (error) {
-          return res.status(404).send({
-            message: "User not found",
-          });
-        }
-      } else if (subscription == "Tier 1" || subscription == "Tier 2") {
+      try {
+        const userId = userExist[0].id;
+        await updateTrailSubscription(userId, "Tier 1");
+        await enrolUserToCourse({
+          courseId: cid,
+          timeStart: startTime,
+          timeEnd: endTime,
+          userId,
+        });
+        console.log("User Enrolled Successfully!");
         return res.status(200).send({
           user: [
             {
@@ -647,33 +626,14 @@ app.post("/enrollUserMegaCompetion", authMiddleware, async (req, res) => {
               password: phone,
             },
           ],
-          status: "alreadyapaiduser",
+          status: "User Enrolled Successfully!",
         });
-      } else if (subscription == "Trial Expired") {
-        return res.status(200).send({
-          user: [
-            {
-              id: userExist[0].id,
-              username: userExist[0].email,
-              password: "wise@123",
-            },
-          ],
-          status: "trialexpired",
-        });
-      } else if (subscription == "Subscription Expired") {
-        return res.status(200).send({
-          user: [
-            {
-              id: userExist[0].id,
-              username: userExist[0].email,
-              password: "wise@123",
-            },
-          ],
-          status: "subscriptionexpired",
+      } catch (error) {
+        return res.status(404).send({
+          message: "User not found",
         });
       }
     }
-    return res.status(200).send({ status: "No subscription" });
   } catch (error) {
     console.log(error);
     res.status(500).send({
