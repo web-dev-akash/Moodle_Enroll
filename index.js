@@ -529,6 +529,159 @@ app.post("/newUser", authMiddleware, async (req, res) => {
   }
 });
 
+app.post("/enrollUserMegaCompetion", authMiddleware, async (req, res) => {
+  try {
+    let { email, phone, student_name, student_grade, expiry_date, start_date } =
+      req.body;
+    let start = new Date(start_date);
+    start.setHours(0, 0, 0, 0);
+    let startTime = Math.floor(start.valueOf() / 1000);
+    let end = new Date(expiry_date);
+    end.setHours(23, 59, 59, 999);
+    let endTime = Math.floor(end.valueOf() / 1000);
+    console.log("End Time :", endTime);
+    console.log("Started the flow");
+    if (phone.length > 10) {
+      phone = phone.substring(phone.length - 10, phone.length);
+    }
+    email = email.trim();
+    email = email.toLowerCase();
+    console.log(email);
+    const firstname = student_name.split(" ")[0];
+    let lastname = "";
+    if (student_name.split(" ").length == 1) {
+      lastname = ".";
+    } else {
+      lastname = student_name.split(" ")[1];
+      if (lastname[0] == " ") {
+        lastname = ".";
+      }
+    }
+    let grade = "";
+    if (student_grade.includes("3")) {
+      grade = "G3";
+    } else if (student_grade.includes("4")) {
+      grade = "G4";
+    } else if (student_grade.includes("5")) {
+      grade = "G5";
+    } else if (student_grade.includes("6")) {
+      grade = "G6";
+    } else if (student_grade.includes("7")) {
+      grade = "G7";
+    } else if (student_grade.includes("2")) {
+      grade = "G2";
+    } else if (student_grade.includes("1")) {
+      grade = "G1";
+    } else if (student_grade.includes("8")) {
+      grade = "G8";
+    }
+    const cid = newcourses[grade];
+    console.log(cid);
+    const userExist = await getExistingUser(email);
+    if (userExist.length == 0) {
+      try {
+        const user = await createUser({
+          email,
+          firstname,
+          lastname,
+          phone,
+          subscription: "Tier 2",
+          trialExpiry: endTime,
+        });
+        const uid = user[0].id;
+        cid
+          ? await enrolUserToCourse({
+              courseId: cid,
+              timeStart: startTime,
+              timeEnd: endTime,
+              userId: uid,
+            })
+          : null;
+        user[0].password = phone;
+        return res.status(200).send({
+          user,
+          status: "User Enrolled Successfully!",
+        });
+      } catch (error) {
+        return res.status(500).send({
+          error,
+        });
+      }
+    } else {
+      const data = userExist[0].customfields.filter(
+        (field) => field.shortname === "live_quiz_subscription"
+      );
+      const subscription = data[0].value;
+      if (subscription == "NA") {
+        try {
+          const userId = userExist[0].id;
+          await updateTrailSubscription(userId, "Tier 2");
+          await enrolUserToCourse({
+            courseId: cid,
+            timeStart: startTime,
+            timeEnd: endTime,
+            userId,
+          });
+          console.log("User Enrolled Successfully!");
+          return res.status(200).send({
+            user: [
+              {
+                id: userExist[0].id,
+                username: userExist[0].email,
+                password: phone,
+              },
+            ],
+            status: "User Enrolled Successfully!",
+          });
+        } catch (error) {
+          return res.status(404).send({
+            message: "User not found",
+          });
+        }
+      } else if (subscription == "Tier 1" || subscription == "Tier 2") {
+        return res.status(200).send({
+          user: [
+            {
+              id: userExist[0].id,
+              username: userExist[0].email,
+              password: phone,
+            },
+          ],
+          status: "alreadyapaiduser",
+        });
+      } else if (subscription == "Trial Expired") {
+        return res.status(200).send({
+          user: [
+            {
+              id: userExist[0].id,
+              username: userExist[0].email,
+              password: "wise@123",
+            },
+          ],
+          status: "trialexpired",
+        });
+      } else if (subscription == "Subscription Expired") {
+        return res.status(200).send({
+          user: [
+            {
+              id: userExist[0].id,
+              username: userExist[0].email,
+              password: "wise@123",
+            },
+          ],
+          status: "subscriptionexpired",
+        });
+      }
+    }
+    return res.status(200).send({ status: "No subscription" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({
+      status: error,
+    });
+  }
+});
+
 app.post("/enrollUser", authMiddleware, async (req, res) => {
   try {
     let { email, phone, student_name, student_grade, expiry_date } = req.body;
