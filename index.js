@@ -573,7 +573,7 @@ app.post("/enrollUserMegaCompetion", authMiddleware, async (req, res) => {
     } else if (student_grade.includes("1")) {
       grade = "G1";
     } else if (student_grade.includes("8")) {
-      grade = "G8";
+      grade = "G7";
     }
     const cid = newcourses[grade];
     console.log(cid);
@@ -682,7 +682,7 @@ app.post("/enrollUser", authMiddleware, async (req, res) => {
     } else if (student_grade.includes("1")) {
       grade = "G1";
     } else if (student_grade.includes("8")) {
-      grade = "G8";
+      grade = "G7";
     }
     const cid = newcourses[grade];
     console.log(cid);
@@ -855,7 +855,7 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
     } else if (student_grade.includes("1")) {
       grade = "G1";
     } else if (student_grade.includes("8")) {
-      grade = "G8";
+      grade = "G7";
     }
     const cid = newcourses[grade];
     const userExist = await getExistingUser(email);
@@ -1067,7 +1067,7 @@ app.post("/enrolPaidUser", authMiddleware, async (req, res) => {
   } else if (student_grade.includes("1")) {
     grade = "G1";
   } else if (student_grade.includes("8")) {
-    grade = "G8";
+    grade = "G7";
   } else {
     return res.status(404).send({
       status: "error",
@@ -1197,7 +1197,7 @@ app.post("/enrolPaidUserThreeMonths", authMiddleware, async (req, res) => {
   } else if (student_grade.includes("1")) {
     grade = "G1";
   } else if (student_grade.includes("8")) {
-    grade = "G8";
+    grade = "G7";
   } else {
     return res.status(404).send({
       status: "error",
