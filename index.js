@@ -497,7 +497,7 @@ app.post("/newUser", authMiddleware, async (req, res) => {
         userId: uid,
       });
       return res.status(200).send({
-        status: "addedToWebniarCourse",
+        status: "success",
         checkUser,
       });
     }
@@ -518,12 +518,13 @@ app.post("/newUser", authMiddleware, async (req, res) => {
     });
     user[0].password = phone;
     return res.status(200).send({
-      status: "createdAndAddedToWebniarCourse",
+      status: "success",
       user,
     });
   } catch (error) {
     console.log(error);
     return res.status(500).send({
+      status: "error",
       error,
     });
   }
