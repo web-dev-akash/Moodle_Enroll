@@ -3190,7 +3190,6 @@ const getDailySchedule = async () => {
 app.get("/dailySchedule", async (req, res) => {
   try {
     const data = await getDailySchedule();
-    // console.log(data);
     res.send({
       data,
     });
