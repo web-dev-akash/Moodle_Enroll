@@ -3145,42 +3145,44 @@ const getDailySchedule = async () => {
     auth: authClientObject,
   });
   const finalData = [];
-  for (let j = 1; j <= 8; j++) {
+  for (let j = 1; j < 8; j++) {
     const readData = await sheet.spreadsheets.values.get({
       auth, //auth object
       spreadsheetId, // spreadsheet id
       range: `Grade ${j}!C:H`, //range of cells to read from.
     });
     const data = readData.data.values;
+    data.shift();
     // console.log(data);
     finalData.push(...data);
   }
 
   // console.log(data);
   for (let i = 0; i < finalData.length; i++) {
-    const date = finalData[i][1].split("/");
-    if (date.length === 1) {
-      continue;
-    }
-    const day = finalData[i][0];
-    const time = finalData[i][2];
-    const grade = finalData[i][3];
-    const subject = finalData[i][4];
-    const topic = finalData[i][5] ? finalData[i][5] : "NA";
+    const date = finalData[i][1]?.toString().split("/");
+    if (date && date.length > 1) {
+      const day = finalData[i][0];
+      const time = finalData[i][2];
+      const grade = finalData[i][3];
+      const subject = finalData[i][4];
+      const topic = finalData[i][5] ? finalData[i][5] : "NA";
 
-    // console.log(topic);
+      // console.log(topic);
 
-    const newDate = new Date(date[2], Number(date[1]) - 1, date[0]);
-    const timestamp = Math.floor(newDate.getTime() / 1000);
-    if (timestamp == startTime) {
-      const obj = {
-        day,
-        time,
-        grade,
-        subject,
-        topic,
-      };
-      finalWeeklyData.push(obj);
+      const newDate = new Date(date[2], Number(date[1]) - 1, date[0]);
+      const timestamp = Math.floor(newDate.getTime() / 1000);
+      if (timestamp == startTime) {
+        const obj = {
+          day,
+          time,
+          grade,
+          subject,
+          topic,
+        };
+        finalWeeklyData.push(obj);
+      }
+    } else {
+      console.log(date);
     }
   }
 
@@ -3194,6 +3196,7 @@ app.get("/dailySchedule", async (req, res) => {
       data,
     });
   } catch (error) {
+    console.log(error);
     res.status(500).send({
       error,
     });
@@ -3290,9 +3293,9 @@ app.get("/previousReport", async (req, res) => {
 });
 
 const getTesterScheduleFromSheet = async () => {
-  const currDate = new Date().toDateString();
+  const { startTime } = getTrailTime();
   const finalWeeklyData = [];
-  const spreadsheetId = process.env.SCHEDULE_SPREADSHEET_ID;
+  const spreadsheetId = process.env.NEW_SCHEDULE_SPREADSHEET_ID;
   const auth = new google.auth.GoogleAuth({
     keyFile: "key.json", //the key file
     scopes: "https://www.googleapis.com/auth/spreadsheets",
@@ -3304,26 +3307,30 @@ const getTesterScheduleFromSheet = async () => {
     auth: authClientObject,
   });
 
-  const readData = await sheet.spreadsheets.values.get({
-    auth, //auth object
-    spreadsheetId, // spreadsheet id
-    range: "Schedule!A:J", //range of cells to read from.
-  });
-  const data = readData.data.values;
-  for (let i = 1; i < data.length; i++) {
-    const sessionid = data[i][9] ? data[i][9] : "";
-    const date = data[i][4].split("/");
-
-    const newDate = new Date(
-      date[2],
-      Number(date[1]) - 1,
-      date[0]
-    ).toDateString();
-    if (currDate === newDate && sessionid !== "") {
-      const obj = {
-        sessionid,
-      };
-      finalWeeklyData.push(obj);
+  const finalData = [];
+  for (let j = 1; j < 8; j++) {
+    const readData = await sheet.spreadsheets.values.get({
+      auth,
+      spreadsheetId,
+      range: `Grade ${j}!D:P`,
+    });
+    const data = readData.data.values;
+    data.shift();
+    finalData.push(...data);
+  }
+  for (let i = 0; i < finalData.length; i++) {
+    const date = finalData[i][0]?.toString().split("/");
+    if (date && date.length > 1) {
+      const sessionid = finalData[i][12] != null ? finalData[i][12] : null;
+      const newDate = new Date(date[2], Number(date[1]) - 1, date[0]);
+      const timestamp = Math.floor(newDate.getTime() / 1000);
+      if (startTime === timestamp && sessionid) {
+        console.log(sessionid);
+        const obj = {
+          sessionid,
+        };
+        finalWeeklyData.push(obj);
+      }
     }
   }
   return finalWeeklyData;
@@ -3336,6 +3343,7 @@ app.get("/testerSchedule", async (req, res) => {
       data,
     });
   } catch (error) {
+    console.log(error);
     res.status(500).send({
       error,
     });
