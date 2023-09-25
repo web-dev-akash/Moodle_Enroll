@@ -3322,12 +3322,13 @@ const getTesterScheduleFromSheet = async () => {
     const date = finalData[i][0]?.toString().split("/");
     if (date && date.length > 1) {
       const sessionid = finalData[i][12] != null ? finalData[i][12] : null;
+      const grade = finalData[i][2]?.toString().substring(6, 7);
       const newDate = new Date(date[2], Number(date[1]) - 1, date[0]);
       const timestamp = Math.floor(newDate.getTime() / 1000);
       if (startTime === timestamp && sessionid) {
-        console.log(sessionid);
         const obj = {
           sessionid,
+          grade,
         };
         finalWeeklyData.push(obj);
       }
