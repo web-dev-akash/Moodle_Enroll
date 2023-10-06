@@ -3149,7 +3149,7 @@ const getDailySchedule = async () => {
     const readData = await sheet.spreadsheets.values.get({
       auth, //auth object
       spreadsheetId, // spreadsheet id
-      range: `Grade ${j}!C:H`, //range of cells to read from.
+      range: `Grade ${j}!B:G`, //range of cells to read from.
     });
     const data = readData.data.values;
     data.shift();
@@ -3165,7 +3165,6 @@ const getDailySchedule = async () => {
       const time = finalData[i][2];
       const grade = finalData[i][3];
       const subject = finalData[i][4];
-      const topic = finalData[i][5] ? finalData[i][5] : "NA";
 
       // console.log(topic);
 
@@ -3177,7 +3176,6 @@ const getDailySchedule = async () => {
           time,
           grade,
           subject,
-          topic,
         };
         finalWeeklyData.push(obj);
       }
@@ -3312,17 +3310,17 @@ const getTesterScheduleFromSheet = async () => {
     const readData = await sheet.spreadsheets.values.get({
       auth,
       spreadsheetId,
-      range: `Grade ${j}!D:P`,
+      range: `Grade ${j}!A:E`,
     });
     const data = readData.data.values;
     data.shift();
     finalData.push(...data);
   }
   for (let i = 0; i < finalData.length; i++) {
-    const date = finalData[i][0]?.toString().split("/");
+    const date = finalData[i][2]?.toString().split("/");
     if (date && date.length > 1) {
-      const sessionid = finalData[i][12] != null ? finalData[i][12] : null;
-      const grade = finalData[i][2]?.toString().substring(6, 7);
+      const sessionid = finalData[i][0] != null ? finalData[i][0] : null;
+      const grade = finalData[i][4]?.toString().substring(6, 7);
       const newDate = new Date(date[2], Number(date[1]) - 1, date[0]);
       const timestamp = Math.floor(newDate.getTime() / 1000);
       if (startTime === timestamp && sessionid) {
