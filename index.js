@@ -570,7 +570,7 @@ app.post("/enrollUserMegaCompetion", authMiddleware, async (req, res) => {
     } else if (student_grade.includes("7")) {
       grade = "G7";
     } else if (student_grade.includes("2")) {
-      grade = "G2";
+      grade = "G1";
     } else if (student_grade.includes("1")) {
       grade = "G1";
     } else if (student_grade.includes("8")) {
@@ -679,7 +679,7 @@ app.post("/enrollUser", authMiddleware, async (req, res) => {
     } else if (student_grade.includes("7")) {
       grade = "G7";
     } else if (student_grade.includes("2")) {
-      grade = "G2";
+      grade = "G1";
     } else if (student_grade.includes("1")) {
       grade = "G1";
     } else if (student_grade.includes("8")) {
@@ -852,7 +852,7 @@ app.post("/createTrailUser", authMiddleware, async (req, res) => {
     } else if (student_grade.includes("7")) {
       grade = "G7";
     } else if (student_grade.includes("2")) {
-      grade = "G2";
+      grade = "G1";
     } else if (student_grade.includes("1")) {
       grade = "G1";
     } else if (student_grade.includes("8")) {
@@ -1064,7 +1064,7 @@ app.post("/enrolPaidUser", authMiddleware, async (req, res) => {
   } else if (student_grade.includes("7")) {
     grade = "G7";
   } else if (student_grade.includes("2")) {
-    grade = "G2";
+    grade = "G1";
   } else if (student_grade.includes("1")) {
     grade = "G1";
   } else if (student_grade.includes("8")) {
@@ -1194,7 +1194,7 @@ app.post("/enrolPaidUserThreeMonths", authMiddleware, async (req, res) => {
   } else if (student_grade.includes("7")) {
     grade = "G7";
   } else if (student_grade.includes("2")) {
-    grade = "G2";
+    grade = "G1";
   } else if (student_grade.includes("1")) {
     grade = "G1";
   } else if (student_grade.includes("8")) {
