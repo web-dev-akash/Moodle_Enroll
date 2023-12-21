@@ -611,7 +611,7 @@ app.post("/enrollUserMegaCompetion", authMiddleware, async (req, res) => {
     } else {
       try {
         const userId = userExist[0].id;
-        await updateTrailSubscription(userId, "Tier 1");
+        // await updateTrailSubscription(userId, "Tier 1");
         await enrolUserToCourse({
           courseId: cid,
           timeStart: startTime,
@@ -2433,13 +2433,26 @@ app.get("/gkReports", async (req, res) => {
 app.get("/reports", async (req, res) => {
   try {
     const email = req.query.email;
+    // const token = await getZohoToken();
+    // const config = {
+    //   headers: {
+    //     Authorization: `Zoho-oauthtoken ${token}`,
+    //     "Content-Type": "application/json",
+    //   },
+    // };
+    // const contact = await axios.get(
+    //   `https://www.zohoapis.com/crm/v3/Contacts/search?email=${email}`,
+    //   config
+    // );
+    // if (!contact.data) {
+    //   return "Not a Zoho Contact";
+    // }
     console.log("first");
-    await updateTagBasedOnSessionAttepted(email);
-    const grades = [1, 2, 3, 4, 5, 6, 7];
+    const grades = [1, 2, 3, 4, 5, 6, 7, 8];
     const percentArray = [];
     const rows = await getSheetData();
     // return res.send({ rows });
-    console.log("rows : ", rows);
+    // console.log("rows : ", rows);
     const aggregatedData = [];
     for (let i = 0; i < rows.length; i++) {
       if (rows[i] && rows[i].c && rows[i].c[0] !== null) {
@@ -2448,7 +2461,7 @@ app.get("/reports", async (req, res) => {
         const attempted = rows[i].c[6].v;
         const polled = rows[i].c[7].v;
         const sessionid = rows[i].c[5].v;
-        const grade = Number(rows[i].c[8].v.substring(6, 7));
+        const grade = contact.data.data[0].Student_Grade;
         const name =
           rows[i].c[1] !== null
             ? `${rows[i].c[0].v} ${rows[i].c[1].v}`
@@ -2457,7 +2470,6 @@ app.get("/reports", async (req, res) => {
         const existingUser = aggregatedData.find(
           (user) => user.email === email
         );
-
         if (existingUser) {
           existingUser.correct += correct;
           existingUser.attempted += attempted;
@@ -2478,7 +2490,7 @@ app.get("/reports", async (req, res) => {
       }
     }
 
-    // return res.send({ aggregatedData });
+    return res.send({ aggregatedData });
 
     console.log("Third");
     for (let i = 0; i < aggregatedData.length; i++) {
@@ -2556,7 +2568,7 @@ app.get("/reports", async (req, res) => {
         message: "User not found",
       });
     }
-    await updateReportLogsinGoogleSheet(user);
+    // await updateReportLogsinGoogleSheet(user);
     console.log("six");
     return res.status(200).send({
       user,
