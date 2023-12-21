@@ -1769,7 +1769,7 @@ app.get("/mathReports", async (req, res) => {
     const grades = [1, 2, 3, 4, 5, 6, 7];
     const percentArray = [];
     const rows = await getSheetData();
-    console.log("second");
+    console.log("rows : ", rows);
     const aggregatedData = [];
     const userData = [];
     for (let i = 0; i < rows.length; i++) {
