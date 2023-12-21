@@ -2439,7 +2439,7 @@ app.get("/reports", async (req, res) => {
     const percentArray = [];
     const rows = await getSheetData();
     // return res.send({ rows });
-    console.log("second");
+    console.log("rows : ", rows);
     const aggregatedData = [];
     for (let i = 0; i < rows.length; i++) {
       if (rows[i] && rows[i].c && rows[i].c[0] !== null) {
