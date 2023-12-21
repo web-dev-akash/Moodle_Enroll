@@ -3147,17 +3147,15 @@ const getDailySchedule = async () => {
   const finalData = [];
   for (let j = 1; j < 8; j++) {
     const readData = await sheet.spreadsheets.values.get({
-      auth, //auth object
-      spreadsheetId, // spreadsheet id
-      range: `Grade ${j}!B:G`, //range of cells to read from.
+      auth,
+      spreadsheetId,
+      range: `Grade ${j}!B:G`,
     });
     const data = readData.data.values;
     data.shift();
-    // console.log(data);
     finalData.push(...data);
   }
 
-  // console.log(data);
   for (let i = 0; i < finalData.length; i++) {
     const date = finalData[i][1]?.toString().split("/");
     if (date && date.length > 1) {
@@ -3165,9 +3163,6 @@ const getDailySchedule = async () => {
       const time = finalData[i][2];
       const grade = finalData[i][3];
       const subject = finalData[i][4];
-
-      // console.log(topic);
-
       const newDate = new Date(date[2], Number(date[1]) - 1, date[0]);
       const timestamp = Math.floor(newDate.getTime() / 1000);
       if (timestamp == startTime) {
@@ -3183,7 +3178,6 @@ const getDailySchedule = async () => {
       console.log(date);
     }
   }
-
   return finalWeeklyData;
 };
 
