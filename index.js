@@ -2433,20 +2433,6 @@ app.get("/gkReports", async (req, res) => {
 app.get("/reports", async (req, res) => {
   try {
     const email = req.query.email;
-    // const token = await getZohoToken();
-    // const config = {
-    //   headers: {
-    //     Authorization: `Zoho-oauthtoken ${token}`,
-    //     "Content-Type": "application/json",
-    //   },
-    // };
-    // const contact = await axios.get(
-    //   `https://www.zohoapis.com/crm/v3/Contacts/search?email=${email}`,
-    //   config
-    // );
-    // if (!contact.data) {
-    //   return "Not a Zoho Contact";
-    // }
     console.log("first");
     const grades = [1, 2, 3, 4, 5, 6, 7, 8];
     const percentArray = [];
@@ -2461,7 +2447,7 @@ app.get("/reports", async (req, res) => {
         const attempted = rows[i].c[6].v;
         const polled = rows[i].c[7].v;
         const sessionid = rows[i].c[5].v;
-        const grade = contact.data.data[0].Student_Grade;
+        const grade = Number(rows[i].c[8].v.substring(6, 7));
         const name =
           rows[i].c[1] !== null
             ? `${rows[i].c[0].v} ${rows[i].c[1].v}`
@@ -2490,7 +2476,7 @@ app.get("/reports", async (req, res) => {
       }
     }
 
-    return res.send({ aggregatedData });
+    // return res.send({ aggregatedData });
 
     console.log("Third");
     for (let i = 0; i < aggregatedData.length; i++) {
@@ -2558,6 +2544,7 @@ app.get("/reports", async (req, res) => {
       finalData.push(...percentileArray);
     }
     console.log("five");
+    // return res.send({ finalData });
     const user = finalData.filter((value) => {
       return value.email.trim() == email.trim();
     });
