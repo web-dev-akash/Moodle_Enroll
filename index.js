@@ -585,7 +585,7 @@ app.post("/enrollUserMegaCompetion", authMiddleware, async (req, res) => {
     const cid = newcourses[grade];
     console.log(cid);
     const userExist = await getExistingUser(email);
-    if (userExist.length == 0) {
+    if (userExist?.length === 0) {
       try {
         const user = await createUser({
           email,
@@ -606,7 +606,7 @@ app.post("/enrollUserMegaCompetion", authMiddleware, async (req, res) => {
           : null;
 
         await enrolUserToCourse({
-          courseId: "532",
+          courseId: 532,
           userId: uid,
         });
 
@@ -632,8 +632,8 @@ app.post("/enrollUserMegaCompetion", authMiddleware, async (req, res) => {
         });
 
         await enrolUserToCourse({
-          courseId: "532",
-          userId: uid,
+          courseId: 532,
+          userId: userId,
         });
 
         console.log("User Enrolled Successfully!");
