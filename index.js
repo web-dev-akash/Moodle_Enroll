@@ -188,6 +188,12 @@ const createUser = async ({
 };
 
 const enrolUserToCourse = async ({ courseId, timeStart, timeEnd, userId }) => {
+  if (!timeStart || !timeEnd) {
+    const res = await axios.post(
+      `${url}?wstoken=${wstoken}&wsfunction=${wsfunctionEnrol}&enrolments[0][roleid]=5&enrolments[0][userid]=${userId}&enrolments[0][courseid]=${courseId}&moodlewsrestformat=json`
+    );
+    return res.data;
+  }
   const res = await axios.post(
     `${url}?wstoken=${wstoken}&wsfunction=${wsfunctionEnrol}&enrolments[0][roleid]=5&enrolments[0][userid]=${userId}&enrolments[0][courseid]=${courseId}&enrolments[0][timestart]=${timeStart}&enrolments[0][timeend]=${timeEnd}&moodlewsrestformat=json`
   );
@@ -598,6 +604,12 @@ app.post("/enrollUserMegaCompetion", authMiddleware, async (req, res) => {
               userId: uid,
             })
           : null;
+
+        await enrolUserToCourse({
+          courseId: "532",
+          userId: uid,
+        });
+
         user[0].password = phone;
         return res.status(200).send({
           user,
@@ -618,6 +630,12 @@ app.post("/enrollUserMegaCompetion", authMiddleware, async (req, res) => {
           timeEnd: endTime,
           userId,
         });
+
+        await enrolUserToCourse({
+          courseId: "532",
+          userId: uid,
+        });
+
         console.log("User Enrolled Successfully!");
         return res.status(200).send({
           user: [
